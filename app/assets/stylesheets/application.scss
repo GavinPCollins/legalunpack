@@ -4,8 +4,13 @@
 @import "config/bootstrap_variables";
 
 // External libraries
-@import "bootstrap";
-@import "font-awesome";
+// @import "bootstrap";
+// @import "font-awesome";
+
+// Tailwind
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 // Your CSS partials
 @import "components/index";
