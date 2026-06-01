@@ -32,6 +32,8 @@ class DeviseCreateUsers < ActiveRecord::Migration[8.1]
       # t.string   :unlock_token # Only if unlock strategy is :email or :both
       # t.datetime :locked_at
 
+      ## custom columns
+      t.string :user_name
 
       t.timestamps null: false
     end
