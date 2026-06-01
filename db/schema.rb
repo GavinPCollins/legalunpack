@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_01_051204) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_01_060000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -33,10 +33,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_01_051204) do
   create_table "documents", force: :cascade do |t|
     t.string "category"
     t.datetime "created_at", null: false
-    t.integer "id_user"
     t.text "overview"
     t.string "status"
     t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.index ["user_id"], name: "index_documents_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -53,4 +54,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_01_051204) do
 
   add_foreign_key "clauses", "documents"
   add_foreign_key "doc_files", "documents"
+  add_foreign_key "documents", "users"
 end
