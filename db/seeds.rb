@@ -7,3 +7,48 @@
 #   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
 #     MovieGenre.find_or_create_by!(name: genre_name)
 #   end
+puts "Creating users..."
+
+gavin = User.find_or_initialize_by(email: "gavin@example.com")
+gavin.update!(
+  username: "Gavin",
+  password: "123456",
+  password_confirmation: "123456"
+)
+
+halo = User.find_or_initialize_by(email: "halo@example.com")
+halo.update!(
+  username: "Halo",
+  password: "123456",
+  password_confirmation: "123456"
+)
+
+george = User.find_or_initialize_by(email: "george@example.com")
+george.update!(
+  username: "George",
+  password: "123456",
+  password_confirmation: "123456"
+)
+
+puts "Users created"
+
+# Alternative loop version, kept here as a reference:
+#
+# seeded_users = {}
+#
+# [
+#   { username: "Gavin", email: "gavin@example.com", password: "123456" },
+#   { username: "Halo", email: "halo@example.com", password: "123456" },
+#   { username: "George", email: "george@example.com", password: "123456" }
+# ].each do |user_attributes|
+#   seeded_users[user_attributes[:username].downcase.to_sym] = User.find_or_initialize_by(email: user_attributes[:email]).tap do |user|
+#     user.username = user_attributes[:username]
+#     user.password = user_attributes[:password]
+#     user.password_confirmation = user_attributes[:password]
+#     user.save!
+#   end
+# end
+#
+# gavin = seeded_users.fetch(:gavin)
+# halo = seeded_users.fetch(:halo)
+# george = seeded_users.fetch(:george)
