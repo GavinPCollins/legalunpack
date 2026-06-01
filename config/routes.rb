@@ -5,12 +5,12 @@ Rails.application.routes.draw do
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
   # 7 CRUD routes for documents
-  resources :documents do # do opens block for nested routes
-    resources :clauses, only: [:index, :show] # Clauses nested inside documents .. create & edit are an AI finction
-    resources :chats, only: [:show, :create] do # Chats nested inside documents
-      resources :messages, only: [:create] # messages nested inside chats
-    end
-  end
+  resources :documents # do opens block for nested routes
+  #   resources :clauses, only: [:index, :show] # Clauses nested inside documents .. create & edit are an AI finction
+  #   resources :chats, only: [:show, :create] do # Chats nested inside documents
+  #     resources :messages, only: [:create] # messages nested inside chats
+  #   end
+  # end
 
   # standalone resource for file uploads ... no editing of raw files.
   resources :doc_files, only: [:create, :destroy]
