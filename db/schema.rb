@@ -10,34 +10,35 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_02_010200) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_02_020000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "clauses", force: :cascade do |t|
     t.text "content"
     t.datetime "created_at", null: false
-    t.bigint "document_id", null: false
+    t.bigint "package_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["document_id"], name: "index_clauses_on_document_id"
+    t.index ["package_id"], name: "index_clauses_on_package_id"
   end
 
   create_table "doc_files", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.bigint "document_id", null: false
     t.string "file_path"
+    t.bigint "package_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["document_id"], name: "index_doc_files_on_document_id"
+    t.index ["package_id"], name: "index_doc_files_on_package_id"
   end
 
-  create_table "documents", force: :cascade do |t|
+  create_table "packages", force: :cascade do |t|
     t.string "category"
     t.datetime "created_at", null: false
+    t.integer "id_user"
     t.text "overview"
     t.string "status"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
-    t.index ["user_id"], name: "index_documents_on_user_id"
+    t.index ["user_id"], name: "index_packages_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -55,7 +56,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_02_010200) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
-  add_foreign_key "clauses", "documents"
-  add_foreign_key "doc_files", "documents"
-  add_foreign_key "documents", "users"
+  add_foreign_key "clauses", "packages"
+  add_foreign_key "doc_files", "packages"
+  add_foreign_key "packages", "users"
 end

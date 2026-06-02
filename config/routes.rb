@@ -4,10 +4,10 @@ Rails.application.routes.draw do
   root to: "pages#home"
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
-  # 7 CRUD routes for documents
-  resources :documents # do opens block for nested routes
-  #   resources :clauses, only: [:index, :show] # Clauses nested inside documents .. create & edit are an AI finction
-  #   resources :chats, only: [:show, :create] do # Chats nested inside documents
+  # 7 CRUD routes for packages
+  resources :packages # do opens block for nested routes
+  #   resources :clauses, only: [:index, :show] # Clauses nested inside packages .. create & edit are an AI finction
+  #   resources :chats, only: [:show, :create] do # Chats nested inside packages
   #     resources :messages, only: [:create] # messages nested inside chats
   #   end
   # end

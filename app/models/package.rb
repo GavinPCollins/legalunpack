@@ -1,4 +1,4 @@
-class Document < ApplicationRecord
+class Package < ApplicationRecord
   belongs_to :user
 
   has_many :doc_files, dependent: :destroy

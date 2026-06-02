@@ -1,3 +1,3 @@
 class DocFile < ApplicationRecord
-  belongs_to :document
+  belongs_to :package
 end

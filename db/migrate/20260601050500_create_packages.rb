@@ -1,6 +1,6 @@
-class CreateDocuments < ActiveRecord::Migration[8.1]
+class CreatePackages < ActiveRecord::Migration[8.1]
   def change
-    create_table :documents do |t|
+    create_table :packages do |t|
       t.integer :id_user
       t.string :category
       t.text :overview
