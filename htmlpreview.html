@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Upload Preview</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f6f7f9;
+      margin: 0;
+      padding: 48px;
+      color: #1f2937;
+    }
+
+    .upload-form {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .upload-panel {
+      background: white;
+      border: 1px solid #d7dce3;
+      border-radius: 8px;
+      padding: 32px;
+    }
+
+    .field {
+      margin-top: 24px;
+    }
+
+    .field label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .field input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      border: 1px solid #c8ced8;
+      border-radius: 6px;
+      font: inherit;
+    }
+
+    .upload-dropzone {
+      border: 2px dashed #9aa4b2;
+      border-radius: 8px;
+      padding: 32px;
+      text-align: center;
+      margin: 24px 0 12px;
+      background: #fafbfc;
+    }
+
+    input[type="file"] {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .upload-button {
+      display: inline-block;
+      margin: 8px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: 1px solid #c8ced8;
+      background: white;
+      color: #1f2937;
+      cursor: pointer;
+    }
+
+    .selected-files {
+      list-style: none;
+      padding: 0;
+      margin: 16px 0 0;
+      text-align: left;
+    }
+
+    .selected-files li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 12px;
+      border: 1px solid #d7dce3;
+      border-radius: 6px;
+      margin-top: 8px;
+      background: white;
+    }
+
+    .selected-files span {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .remove-file {
+      flex: 0 0 auto;
+      border: 0;
+      border-radius: 6px;
+      padding: 6px 10px;
+      background: #fee2e2;
+      color: #991b1b;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .upload-help {
+      color: #6b7280;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .paste-panel label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      border: 1px solid #c8ced8;
+      border-radius: 6px;
+      resize: vertical;
+      font: inherit;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    .action-button {
+      padding: 12px 18px;
+      border: 0;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .cancel-button {
+      background: #eef0f3;
+      color: #4b5563;
+    }
+
+    .create-button {
+      background: #0f766e;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <!-- paste the form here -->
+   <form action="/packages" method="post" enctype="multipart/form-data" class="upload-form">
+  <section class="upload-panel">
+    <h1>Create Package</h1>
+
+    <p>
+      Name the package, select one or more files, or paste text below.
+    </p>
+
+    <div class="field">
+      <label for="package_name">Package name</label>
+      <input
+        id="package_name"
+        name="package[name]"
+        type="text"
+        placeholder="Example: Lease review, Court notice, Employment contract"
+      />
+    </div>
+
+    <div class="upload-dropzone">
+      <p>Drop files here</p>
+
+      <label for="package_files" class="upload-button">
+        Select Files
+      </label>
+
+      <input
+        id="package_files"
+        name="files[]"
+        type="file"
+        multiple
+        accept=".pdf,.doc,.docx,.txt,.rtf,.odt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+      />
+
+      <ul id="selected_files" class="selected-files" aria-live="polite"></ul>
+    </div>
+
+    <div class="upload-help">
+      Accepted file types: PDF, DOCX, DOC, TXT, RTF, ODT.
+    </div>
+
+    <div class="paste-panel">
+      <label for="package_pasted_text">
+        Or paste text below
+      </label>
+
+      <textarea
+        id="package_pasted_text"
+        name="pasted_text"
+        rows="10"
+        placeholder="Paste contract terms, letters, notices, clauses, or other legal text here..."
+      ></textarea>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="action-button cancel-button">
+        Cancel
+      </button>
+
+      <button type="submit" class="action-button create-button">
+        Create
+      </button>
+    </div>
+  </section>
+</form>
+
+<script>
+  const fileInput = document.getElementById("package_files");
+  const selectedFilesList = document.getElementById("selected_files");
+  const dropzone = document.querySelector(".upload-dropzone");
+  let selectedFiles = [];
+
+  function syncFileInput() {
+    const transfer = new DataTransfer();
+
+    selectedFiles.forEach((file) => {
+      transfer.items.add(file);
+    });
+
+    fileInput.files = transfer.files;
+  }
+
+  function renderSelectedFiles() {
+    selectedFilesList.innerHTML = "";
+
+    selectedFiles.forEach((file, index) => {
+      const item = document.createElement("li");
+      const fileName = document.createElement("span");
+      const removeButton = document.createElement("button");
+
+      fileName.textContent = file.name;
+      removeButton.type = "button";
+      removeButton.className = "remove-file";
+      removeButton.textContent = "Delete";
+      removeButton.addEventListener("click", () => {
+        selectedFiles.splice(index, 1);
+        syncFileInput();
+        renderSelectedFiles();
+      });
+
+      item.append(fileName, removeButton);
+      selectedFilesList.appendChild(item);
+    });
+  }
+
+  function addFiles(files) {
+    selectedFiles = selectedFiles.concat(Array.from(files));
+    syncFileInput();
+    renderSelectedFiles();
+  }
+
+  fileInput.addEventListener("change", () => {
+    addFiles(fileInput.files);
+  });
+
+  dropzone.addEventListener("dragover", (event) => {
+    event.preventDefault();
+  });
+
+  dropzone.addEventListener("drop", (event) => {
+    event.preventDefault();
+    addFiles(event.dataTransfer.files);
+  });
+</script>
+</body>
+</html>
