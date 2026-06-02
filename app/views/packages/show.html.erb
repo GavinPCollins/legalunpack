@@ -1,4 +1,21 @@
-<div>
-  <h1 class="font-bold text-4xl">Packages#show</h1>
-  <p>Find me in app/views/packages/show.html.erb</p>
-</div>
+<section>
+  <h1><%= @package.name.presence || "Package" %></h1>
+
+  <h2>Files</h2>
+
+  <% if @package.doc_files.any? %>
+    <ul>
+      <% @package.doc_files.each do |doc_file| %>
+        <li>
+          <% if doc_file.file.attached? %>
+            <%= link_to doc_file.file.filename.to_s, rails_blob_path(doc_file.file, disposition: "attachment") %>
+          <% else %>
+            Untitled file
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p>No files uploaded yet.</p>
+  <% end %>
+</section>

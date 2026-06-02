@@ -1,0 +1,49 @@
+<%= form_with model: package, html: { multipart: true }, class: "upload-form", data: { controller: "file-upload" } do |form| %>
+  <section class="upload-panel">
+    <h1>Create package</h1>
+
+    <p class="upload-subtitle">Upload legal files.</p>
+
+    <div class="field">
+      <%= form.label :name, "Package name" %>
+      <%= form.text_field :name, placeholder: "Example: Lease review, Court notice, Employment contract" %>
+    </div>
+
+    <div class="upload-dropzone" data-file-upload-target="dropzone" data-action="dragover->file-upload#dragover drop->file-upload#drop">
+      <p>Drop files here</p>
+
+      <%= label_tag :package_files, "Select Files", class: "upload-button" %>
+      <%= file_field_tag "files[]",
+            id: "package_files",
+            multiple: true,
+            accept: ".pdf,.doc,.docx,.txt,.rtf,.odt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text,application/rtf,application/x-rtf,text/rtf,text/plain",
+            data: { file_upload_target: "input", action: "change->file-upload#select" } %>
+
+      <ul class="selected-files" data-file-upload-target="list" aria-live="polite"></ul>
+    </div>
+
+    <div class="upload-help">
+      Accepted file types: PDF, DOCX, DOC, TXT, RTF, ODT.
+    </div>
+
+    <%# <div class="paste-panel"> %>
+      <%#= label_tag :pasted_text, "Or paste text below" %>
+      <%#= text_area_tag :pasted_text,
+            nil,
+            rows: 10,
+            placeholder: "Paste contract terms, letters, notices, clauses, or other legal text here..." %>
+    <%# </div> %>
+
+    <div class="form-actions">
+      <%= link_to "Cancel", root_path, class: "action-button cancel-button", data: { turbo: false } %>
+      <%= form.submit "Create", class: "action-button create-button" %>
+    </div>
+
+    <% form_errors = package.errors[:name] + package.errors[:base] %>
+    <% if form_errors.present? %>
+      <% form_errors.each do |message| %>
+        <p class="upload-error"><%= message %></p>
+      <% end %>
+    <% end %>
+  </section>
+<% end %>
