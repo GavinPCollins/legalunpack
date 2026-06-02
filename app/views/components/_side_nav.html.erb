@@ -54,15 +54,15 @@
     </ul>
 
     <%# ====== Part2 > Collection (packages) ====== %>
+        <% if current_user&.packages&.any? %>
         <div class="pt-16 text-xs/6 font-semibold text-gray-400">Packages</div>
         <%# ====== Collection (packages) ====== %>
         <ul role="list" class="-mx-2 space-y-1">
-        <%# ====== UL1 > LI2 > ul2 ====== %>
-        <% if current_user&.packages&.any? %>
+        <%# ====== Packede list ====== %>
           <% current_user.packages.select { |pack| pack.name.present? }.each do |pack| %>
             <%# ====== package ====== %>
             <li>
-            <%= link_to package_path(pack), class: "group flex gap-x-3 rounded-md p-2 text-sm/6 font-medium text-gray-700 hover:bg-gray-50" do %>
+            <%= link_to package_path(pack), class: "group flex gap-x-3 rounded-md p-2 text-sm/6 ml-4 font-medium text-gray-700 hover:bg-gray-50" do %>
               <span class="truncate"><%= pack.name %></span>
             <% end %>
             </li>
