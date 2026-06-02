@@ -23,24 +23,26 @@
   </head>
 
   <body class="min-h-screen h-full bg-slate-50 text-slate-950">
-    <header class="border-b border-slate-200 bg-white">
-      <nav class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-        <%= link_to "Legalunpack", root_path, class: "text-lg font-semibold tracking-tight text-slate-950" %>
-
-        <div class="flex items-center gap-3 text-sm font-medium">
-          <% if user_signed_in? %>
-            <span class="text-slate-600"><%= current_user.try(:name).presence || current_user.username.presence || current_user.email %></span>
-            <%= button_to "Log out", destroy_user_session_path, method: :delete, class: "rounded-md border border-slate-300 px-3 py-2 text-slate-700 hover:bg-slate-100" %>
-          <% else %>
+    <% if user_signed_in? %>
+      <div class="flex min-h-screen">
+        <%= render "components/side_nav" %>
+        <main class="min-w-0 flex-1 px-6 py-10 lg:px-10">
+          <%= yield %>
+        </main>
+      </div>
+    <% else %>
+      <header class="border-b border-slate-200 bg-white">
+        <nav class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
+          <%= link_to "Legalunpack", root_path, class: "text-lg font-semibold tracking-tight text-slate-950" %>
+          <div class="flex items-center gap-3 text-sm font-medium">
             <%= link_to "Log in", new_user_session_path, class: "rounded-md px-3 py-2 text-slate-700 hover:bg-slate-100" %>
             <%= link_to "Sign up", new_user_registration_path, class: "rounded-md bg-slate-950 px-3 py-2 text-white hover:bg-slate-800" %>
-          <% end %>
-        </div>
-      </nav>
-    </header>
-
-    <main class="mx-auto flex w-full max-w-6xl px-5 py-12">
-      <%= yield %>
-    </main>
+          </div>
+        </nav>
+      </header>
+      <main class="mx-auto flex w-full max-w-6xl px-5 py-12">
+        <%= yield %>
+      </main>
+    <% end %>
   </body>
 </html>
