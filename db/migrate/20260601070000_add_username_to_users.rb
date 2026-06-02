@@ -5,6 +5,5 @@ class AddUsernameToUsers < ActiveRecord::Migration[8.1]
 
   def down
     remove_column :users, :username if column_exists?(:users, :username)
-    remove_column :users, :name if column_exists?(:users, :name)
   end
 end

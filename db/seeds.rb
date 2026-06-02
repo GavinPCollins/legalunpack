@@ -11,21 +11,24 @@ puts "Creating users..."
 
 gavin = User.find_or_initialize_by(email: "gavin@example.com")
 gavin.update!(
-  username: "Gavin",
+  name: "Gavin",
+  username: "gavin",
   password: "123456",
   password_confirmation: "123456"
 )
 
 halo = User.find_or_initialize_by(email: "halo@example.com")
 halo.update!(
-  username: "Halo",
+  name: "Halo",
+  username: "halo",
   password: "123456",
   password_confirmation: "123456"
 )
 
 george = User.find_or_initialize_by(email: "george@example.com")
 george.update!(
-  username: "George",
+  name: "George",
+  username: "george",
   password: "123456",
   password_confirmation: "123456"
 )
@@ -37,11 +40,12 @@ puts "Users created"
 # seeded_users = {}
 #
 # [
-#   { username: "Gavin", email: "gavin@example.com", password: "123456" },
-#   { username: "Halo", email: "halo@example.com", password: "123456" },
-#   { username: "George", email: "george@example.com", password: "123456" }
+#   { name: "Gavin", username: "gavin", email: "gavin@example.com", password: "123456" },
+#   { name: "Halo", username: "halo", email: "halo@example.com", password: "123456" },
+#   { name: "George", username: "george", email: "george@example.com", password: "123456" }
 # ].each do |user_attributes|
-#   seeded_users[user_attributes[:username].downcase.to_sym] = User.find_or_initialize_by(email: user_attributes[:email]).tap do |user|
+#   seeded_users[user_attributes[:username].to_sym] = User.find_or_initialize_by(email: user_attributes[:email]).tap do |user|
+#     user.name = user_attributes[:name]
 #     user.username = user_attributes[:username]
 #     user.password = user_attributes[:password]
 #     user.password_confirmation = user_attributes[:password]
