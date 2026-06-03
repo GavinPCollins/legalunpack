@@ -5,6 +5,8 @@ gem "rails", "~> 8.1.3"
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
 # Use postgresql as the database for Active Record
 gem "pg", "~> 1.1"
+# CODEX search function updates
+gem "pg_search"
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]

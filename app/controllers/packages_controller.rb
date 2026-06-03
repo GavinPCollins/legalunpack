@@ -63,19 +63,10 @@ class PackagesController < ApplicationController
   def package_search_results
     return Package.none if @query.blank?
 
-    packages = current_user.packages
-      .includes(doc_files: { file_attachment: :blob })
-      .order(created_at: :desc)
-
-    escaped_query = ActiveRecord::Base.sanitize_sql_like(@query)
-
-    packages
-      .left_joins(doc_files: :file_blob)
-      .where(
-        "packages.name ILIKE :query OR active_storage_blobs.filename ILIKE :query",
-        query: "%#{escaped_query}%"
-      )
-      .distinct
+    current_user.packages
+                .search_by_name_and_filename(@query)
+                .includes(doc_files: { file_attachment: :blob })
+                .order(created_at: :desc)
   end
 
   def uploaded_files_present?
