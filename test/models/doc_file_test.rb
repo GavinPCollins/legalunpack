@@ -41,4 +41,10 @@ class DocFileTest < ActiveSupport::TestCase
     assert_not doc_file.valid?
     assert_includes doc_file.errors[:file], "must be smaller than 25 MB"
   end
+
+  test "defaults extraction status to pending" do
+    doc_file = @package.doc_files.build
+
+    assert_equal "pending", doc_file.extraction_status
+  end
 end

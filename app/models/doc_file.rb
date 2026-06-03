@@ -9,12 +9,17 @@ class DocFile < ApplicationRecord
     "text/plain"
   ].freeze
 
+  EXTRACTION_STATUSES = %w[pending processing complete failed].freeze
+
   belongs_to :package
   has_one_attached :file
 
   validates :file, presence: true
   validate :file_content_type
   validate :file_size
+  validates :extraction_status, inclusion: { in: EXTRACTION_STATUSES }
+
+  after_initialize :set_default_extraction_status, if: :new_record?
 
   private
 
@@ -30,5 +35,9 @@ class DocFile < ApplicationRecord
     return if file.blob.byte_size <= MAX_FILE_SIZE
 
     errors.add(:file, "must be smaller than #{MAX_FILE_SIZE / 1.megabyte} MB")
+  end
+
+  def set_default_extraction_status
+    self.extraction_status ||= "pending"
   end
 end
