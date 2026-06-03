@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html  class="h-full bg-white">
+<html  class="h-full bg-neutral-50">
   <head>
     <title><%= content_for(:title) || "Legalunpack" %></title>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -22,7 +22,7 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="min-h-screen h-full bg-slate-50 text-slate-950">
+  <body class="min-h-screen h-full bg-neutral-50 text-neutral-950">
     <% if user_signed_in? %>
       <div class="flex min-h-screen">
         <%= render "components/side_nav" %>
@@ -31,12 +31,12 @@
         </main>
       </div>
     <% else %>
-      <header class="border-b border-slate-200 bg-white">
+      <header class="border-b border-neutral-200 bg-white">
         <nav class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <%= link_to "Legalunpack", root_path, class: "text-lg font-semibold tracking-tight text-slate-950" %>
+          <%= link_to "Legalunpack", root_path, class: "text-lg font-semibold tracking-tight text-neutral-950" %>
           <div class="flex items-center gap-3 text-sm font-medium">
-            <%= link_to "Log in", new_user_session_path, class: "rounded-md px-3 py-2 text-slate-700 hover:bg-slate-100" %>
-            <%= link_to "Sign up", new_user_registration_path, class: "rounded-md bg-slate-950 px-3 py-2 text-white hover:bg-slate-800" %>
+            <%= link_to "Log in", new_user_session_path, class: "rounded-md px-3 py-2 text-neutral-700 hover:bg-neutral-100" %>
+            <%= link_to "Sign up", new_user_registration_path, class: "rounded-md bg-cyan-950 px-3 py-2 text-neutral-50 hover:bg-cyan-900" %>
           </div>
         </nav>
       </header>
