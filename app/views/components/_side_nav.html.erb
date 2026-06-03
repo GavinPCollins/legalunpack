@@ -11,12 +11,13 @@
   <nav class="flex flex-1 flex-col" aria-label="Main navigation">
     <ul class="space-y-1">
       <li>
-        <button type="button" aria-label="Search" title="Search" class="group flex w-full items-center justify-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors hover:bg-white/5 hover:text-white lg:justify-start">
+        <%# CODEX search function updates %>
+        <%= link_to packages_path, aria: { label: "Search" }, title: "Search", class: "group flex w-full items-center justify-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors hover:bg-white/5 hover:text-white lg:justify-start" do %>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5 shrink-0">
             <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m1.35-5.4a6.75 6.75 0 1 1-13.5 0 6.75 6.75 0 0 1 13.5 0Z" />
           </svg>
           <span class="hidden lg:inline">Search</span>
-        </button>
+        <% end %>
       </li>
       <li>
         <%= link_to packages_path, aria: { label: "Packages" }, title: "Packages", class: class_names(

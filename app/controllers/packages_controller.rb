@@ -1,6 +1,8 @@
 class PackagesController < ApplicationController
   def index
-    @packages = current_user.packages.order(created_at: :desc)
+    # CODEX search function updates
+    @query = params[:q].to_s.strip
+    @packages = package_search_results
   end
 
   def show
@@ -55,6 +57,25 @@ class PackagesController < ApplicationController
 
   def package_params
     params.fetch(:package, {}).permit(:name, :category, :overview, :status)
+  end
+
+  # CODEX search function updates
+  def package_search_results
+    return Package.none if @query.blank?
+
+    packages = current_user.packages
+      .includes(doc_files: { file_attachment: :blob })
+      .order(created_at: :desc)
+
+    escaped_query = ActiveRecord::Base.sanitize_sql_like(@query)
+
+    packages
+      .left_joins(doc_files: :file_blob)
+      .where(
+        "packages.name ILIKE :query OR active_storage_blobs.filename ILIKE :query",
+        query: "%#{escaped_query}%"
+      )
+      .distinct
   end
 
   def uploaded_files_present?
