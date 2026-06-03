@@ -1,17 +1,10 @@
 <aside class="flex min-h-screen w-20 shrink-0 flex-col border-r border-neutral-200 bg-neutral-100 px-2 py-5 lg:w-64 lg:px-4">
-
   <%# ====== Logo section ====== %>
-<div class="mb-8 flex shrink-0 items-start px-2">
-  <%= link_to root_path, aria: { label: "Legalunpack" }, class: "flex items-center justify-center gap-3 px-2 text-neutral-950 lg:justify-start" do %>
-   <%= image_tag "Logo9.svg", alt: "Legalunpack", class: "h-12 w-auto max-w-full object-contain" %>
-  <% end %>
-</div>
-    <%# <span class="flex size-9 items-center justify-center rounded-md bg-emerald-400 text-neutral-950">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m3.75-3.375V5.25A2.25 2.25 0 0 0 16.5 3h-9a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h9a2.25 2.25 0 0 0 2.25-2.25V9.937m-7.5-3.562h7.5m0 0-2.625-2.625M18.75 6.375 16.125 9" />
-      </svg>
-    </span>
-    <span class="hidden text-base font-semibold lg:inline">Legalunpack</span> %>
+  <div class="mb-8 flex shrink-0 items-start px-2">
+    <%= link_to root_path, aria: { label: "Legalunpack" }, class: "flex items-center justify-center gap-3 px-2 text-neutral-950 lg:justify-start" do %>
+      <%= image_tag "Logo9.svg", alt: "Legalunpack", class: "h-12 w-auto max-w-full object-contain" %>
+    <% end %>
+  </div>
 
   <nav class="flex flex-1 flex-col" aria-label="Main navigation">
     <% packages_controller_active = controller_name == "packages" %>
@@ -20,74 +13,53 @@
     <% selected_package_id = packages_controller_active && %w[show edit update].include?(action_name) ? params[:id].to_s : nil %>
 
     <%# ====== Nav - Parts ====== %>
-    <ul class="space-y-1 mt-4">
-
-      <%# ====== OPTION 1 ====== %>
-      <%# --- new package ---  %>
-        <li>
-          <%= link_to new_package_path, aria: { label: "New package", current: (new_package_active ? "page" : nil) }, title: "New package", class: class_names(
-            "group flex items-center justify-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors lg:justify-start",
-            new_package_active ? "bg-neutral-50 text-neutral-950" : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950"
-          ) do %>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5 shrink-0">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            <span class="hidden lg:inline">New package</span>
-          <% end %>
-        </li>
-
-
-      <%# ====== OPTION 2 ====== %>
-      <%# --- index/search ---  %>
+    <ul class="mt-4 space-y-1">
+      <%# --- new package --- %>
       <li>
-        <%= link_to packages_path, aria: { label: "Packages", current: (packages_index_active ? "page" : nil) }, title: "Packages", class: class_names(
+        <%= link_to new_package_path, aria: { label: "New package", current: (new_package_active ? "page" : nil) }, title: "New package", class: class_names(
+          "group flex items-center justify-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors lg:justify-start",
+          new_package_active ? "bg-neutral-50 text-neutral-950" : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950"
+        ) do %>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5 shrink-0">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          <span class="hidden lg:inline">New package</span>
+        <% end %>
+      </li>
+
+      <%# CODEX search function updates %>
+      <li>
+        <%= link_to packages_path, aria: { label: "Search packages", current: (packages_index_active ? "page" : nil) }, title: "Search packages", class: class_names(
           "group flex items-center justify-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors lg:justify-start",
           packages_index_active ? "bg-neutral-50 text-neutral-950" : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950"
         ) do %>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5 shrink-0">
             <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m1.35-5.4a6.75 6.75 0 1 1-13.5 0 6.75 6.75 0 0 1 13.5 0Z" />
           </svg>
-          <%# <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5 shrink-0">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.75h16.5m-16.5 0A2.25 2.25 0 0 1 6 7.5h3.879c.398 0 .78.158 1.06.44l1.122 1.12c.281.282.663.44 1.06.44H18a2.25 2.25 0 0 1 2.25 2.25v6A2.25 2.25 0 0 1 18 20H6a2.25 2.25 0 0 1-2.25-2.25v-8Z" />
-          </svg> %>
           <span class="hidden lg:inline">Search packages</span>
         <% end %>
       </li>
     </ul>
 
-      <%# ====== ARCHIVED - OPTION 2 ====== %>
-
-      <%# <li>
-        <button type="button" aria-label="Search" title="Search" class="group flex w-full items-center justify-center gap-3 rounded-md px-3 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-50 lg:justify-start">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5 shrink-0">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m1.35-5.4a6.75 6.75 0 1 1-13.5 0 6.75 6.75 0 0 1 13.5 0Z" />
-          </svg>
-          <span class="hidden lg:inline">Search</span>
-        </button>
-      </li> %>
-
-    <%# ====== Part2 > Collection (packages) ====== %>
-        <% if current_user&.packages&.any? %>
-        <div class="pt-16 text-xs/6 font-semibold text-neutral-500">Packages</div>
-        <%# ====== Collection (packages) ====== %>
-        <ul role="list" class="-mx-2 space-y-1">
-        <%# ====== Packede list ====== %>
-          <% current_user.packages.select { |pack| pack.name.present? }.each do |pack| %>
-            <% package_active = selected_package_id == pack.id.to_s %>
-            <%# ====== package ====== %>
-            <li>
+    <%# ====== Collection (packages) ====== %>
+    <% if current_user&.packages&.any? %>
+      <div class="pt-16 text-xs/6 font-semibold text-neutral-500">Packages</div>
+      <ul role="list" class="-mx-2 space-y-1">
+        <% current_user.packages.select { |pack| pack.name.present? }.each do |pack| %>
+          <% package_active = selected_package_id == pack.id.to_s %>
+          <li>
             <%= link_to package_path(pack), aria: { current: (package_active ? "page" : nil) }, class: class_names(
               "group flex gap-x-3 rounded-md p-2 text-sm/6 font-medium",
               package_active ? "bg-neutral-50 text-neutral-950" : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950"
             ) do %>
               <span class="truncate"><%= pack.name %></span>
             <% end %>
-            </li>
-          <% end %>
-        <%end%>
-        </ul>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
 
-    <%# ====== Part2 > Collection (packages) ====== %>
+    <%# ====== Account ====== %>
     <div class="mt-auto border-t border-neutral-200 pt-4">
       <div class="flex items-center justify-center gap-3 pb-3 lg:justify-start">
         <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-50 text-sm font-bold text-neutral-700 outline -outline-offset-1 outline-black/5">

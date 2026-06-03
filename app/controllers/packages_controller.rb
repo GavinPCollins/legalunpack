@@ -1,6 +1,8 @@
 class PackagesController < ApplicationController
   def index
-    @packages = current_user.packages.order(created_at: :desc)
+    # CODEX search function updates
+    @query = params[:q].to_s.strip
+    @packages = package_search_results
   end
 
   def show
@@ -55,6 +57,16 @@ class PackagesController < ApplicationController
 
   def package_params
     params.fetch(:package, {}).permit(:name, :category, :overview, :status)
+  end
+
+  # CODEX search function updates
+  def package_search_results
+    return Package.none if @query.blank?
+
+    current_user.packages
+                .search_by_name_and_filename(@query)
+                .includes(doc_files: { file_attachment: :blob })
+                .order(created_at: :desc)
   end
 
   def uploaded_files_present?

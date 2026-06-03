@@ -13,6 +13,43 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
   test "should get index" do
     get packages_url
     assert_response :success
+    assert_no_includes response.body, "Lease review"
+  end
+
+  # CODEX search function updates
+  test "should search by package name" do
+    @user.packages.create!(name: "Court notice")
+
+    get packages_url, params: { q: "court" }
+
+    assert_response :success
+    assert_includes response.body, "Court notice"
+    assert_no_includes response.body, "Lease review"
+  end
+
+  # CODEX search function updates
+  test "should search by uploaded filename" do
+    package = @user.packages.create!(name: "Employment contract")
+    package.doc_files.create!(file: fixture_file_upload("sample.txt", "text/plain"))
+
+    get packages_url, params: { q: "sample" }
+
+    assert_response :success
+    assert_includes response.body, "Employment contract"
+    assert_includes response.body, "sample.txt"
+    assert_no_includes response.body, "Lease review"
+  end
+
+  # CODEX search function updates
+  test "should only search current user packages" do
+    other_user = User.create!(email: "other@example.com", password: "password", username: "other")
+    other_package = other_user.packages.create!(name: "Private settlement")
+    other_package.doc_files.create!(file: fixture_file_upload("sample.txt", "text/plain"))
+
+    get packages_url, params: { q: "private" }
+
+    assert_response :success
+    assert_no_includes response.body, "Private settlement"
   end
 
   test "should get show" do
