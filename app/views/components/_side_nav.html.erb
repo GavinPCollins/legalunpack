@@ -1,9 +1,9 @@
 <aside class="flex min-h-screen w-20 shrink-0 flex-col border-r border-neutral-200 bg-neutral-100 px-2 py-5 lg:w-64 lg:px-4">
 
   <%# ====== Logo section ====== %>
-<div class="relative m-4 flex h-32 shrink-0 items-center">
-  <%= link_to root_path, aria: { label: "Legalunpack" }, class: "flex items-center justify-center gap-3 px-2 pb-8 text-neutral-950 lg:justify-start" do %>
-   <%= image_tag "Logo8.svg", alt: "Legalunpack", class: "h-10 w-auto max-w-full object-contain" %>
+<div class="mb-8 flex shrink-0 items-start px-2">
+  <%= link_to root_path, aria: { label: "Legalunpack" }, class: "flex items-center justify-center gap-3 px-2 text-neutral-950 lg:justify-start" do %>
+   <%= image_tag "Logo9.svg", alt: "Legalunpack", class: "h-12 w-auto max-w-full object-contain" %>
   <% end %>
 </div>
     <%# <span class="flex size-9 items-center justify-center rounded-md bg-emerald-400 text-neutral-950">
@@ -14,44 +14,57 @@
     <span class="hidden text-base font-semibold lg:inline">Legalunpack</span> %>
 
   <nav class="flex flex-1 flex-col" aria-label="Main navigation">
+    <% packages_controller_active = controller_name == "packages" %>
+    <% new_package_active = packages_controller_active && %w[new create].include?(action_name) %>
+    <% packages_index_active = packages_controller_active && action_name == "index" %>
+    <% selected_package_id = packages_controller_active && %w[show edit update].include?(action_name) ? params[:id].to_s : nil %>
 
     <%# ====== Nav - Parts ====== %>
-    <ul class="space-y-1">
+    <ul class="space-y-1 mt-4">
 
-      <%# ====== Part1 > OPTIONS ====== %>
+      <%# ====== OPTION 1 ====== %>
+      <%# --- new package ---  %>
+        <li>
+          <%= link_to new_package_path, aria: { label: "New package", current: (new_package_active ? "page" : nil) }, title: "New package", class: class_names(
+            "group flex items-center justify-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors lg:justify-start",
+            new_package_active ? "bg-neutral-50 text-neutral-950" : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950"
+          ) do %>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5 shrink-0">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            <span class="hidden lg:inline">New package</span>
+          <% end %>
+        </li>
+
+
+      <%# ====== OPTION 2 ====== %>
+      <%# --- index/search ---  %>
       <li>
+        <%= link_to packages_path, aria: { label: "Packages", current: (packages_index_active ? "page" : nil) }, title: "Packages", class: class_names(
+          "group flex items-center justify-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors lg:justify-start",
+          packages_index_active ? "bg-neutral-50 text-neutral-950" : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950"
+        ) do %>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5 shrink-0">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m1.35-5.4a6.75 6.75 0 1 1-13.5 0 6.75 6.75 0 0 1 13.5 0Z" />
+          </svg>
+          <%# <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5 shrink-0">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.75h16.5m-16.5 0A2.25 2.25 0 0 1 6 7.5h3.879c.398 0 .78.158 1.06.44l1.122 1.12c.281.282.663.44 1.06.44H18a2.25 2.25 0 0 1 2.25 2.25v6A2.25 2.25 0 0 1 18 20H6a2.25 2.25 0 0 1-2.25-2.25v-8Z" />
+          </svg> %>
+          <span class="hidden lg:inline">Search packages</span>
+        <% end %>
+      </li>
+    </ul>
+
+      <%# ====== ARCHIVED - OPTION 2 ====== %>
+
+      <%# <li>
         <button type="button" aria-label="Search" title="Search" class="group flex w-full items-center justify-center gap-3 rounded-md px-3 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-50 lg:justify-start">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5 shrink-0">
             <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m1.35-5.4a6.75 6.75 0 1 1-13.5 0 6.75 6.75 0 0 1 13.5 0Z" />
           </svg>
           <span class="hidden lg:inline">Search</span>
         </button>
-      </li>
-
-
-      <li>
-        <%= link_to packages_path, aria: { label: "Packages" }, title: "Packages", class: class_names(
-          "group flex items-center justify-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors lg:justify-start",
-          controller_name == "packages" ? "bg-neutral-50 text-neutral-950" : "text-neutral-700 hover:bg-neutral-50"
-        ) do %>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5 shrink-0">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.75h16.5m-16.5 0A2.25 2.25 0 0 1 6 7.5h3.879c.398 0 .78.158 1.06.44l1.122 1.12c.281.282.663.44 1.06.44H18a2.25 2.25 0 0 1 2.25 2.25v6A2.25 2.25 0 0 1 18 20H6a2.25 2.25 0 0 1-2.25-2.25v-8Z" />
-          </svg>
-          <span class="hidden lg:inline">Packages</span>
-        <% end %>
-      </li>
-      <li>
-        <%= link_to new_package_path, aria: { label: "New package" }, title: "New package", class: class_names(
-          "group flex items-center justify-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors lg:justify-start",
-          current_page?(new_package_path) ? "bg-neutral-50 text-neutral-950" : "text-neutral-700 hover:bg-neutral-50"
-        ) do %>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5 shrink-0">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          <span class="hidden lg:inline">New package</span>
-        <% end %>
-      </li>
-    </ul>
+      </li> %>
 
     <%# ====== Part2 > Collection (packages) ====== %>
         <% if current_user&.packages&.any? %>
@@ -60,17 +73,23 @@
         <ul role="list" class="-mx-2 space-y-1">
         <%# ====== Packede list ====== %>
           <% current_user.packages.select { |pack| pack.name.present? }.each do |pack| %>
+            <% package_active = selected_package_id == pack.id.to_s %>
             <%# ====== package ====== %>
             <li>
-            <%= link_to package_path(pack), class: "group flex gap-x-3 rounded-md p-2 text-sm/6 ml-4 font-medium text-neutral-700 hover:bg-neutral-50" do %>
+            <%= link_to package_path(pack), aria: { current: (package_active ? "page" : nil) }, class: class_names(
+              "group flex gap-x-3 rounded-md p-2 text-sm/6 font-medium",
+              package_active ? "bg-neutral-50 text-neutral-950" : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950"
+            ) do %>
               <span class="truncate"><%= pack.name %></span>
             <% end %>
             </li>
           <% end %>
         <%end%>
         </ul>
+
+    <%# ====== Part2 > Collection (packages) ====== %>
     <div class="mt-auto border-t border-neutral-200 pt-4">
-      <div class="flex items-center justify-center gap-3 px-3 pb-3 lg:justify-start">
+      <div class="flex items-center justify-center gap-3 pb-3 lg:justify-start">
         <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-50 text-sm font-bold text-neutral-700 outline -outline-offset-1 outline-black/5">
           <%= (current_user.try(:name).presence || current_user.username.presence || current_user.email).first.upcase %>
         </span>
@@ -80,7 +99,10 @@
         </div>
       </div>
 
-      <%= link_to edit_user_registration_path, aria: { label: "Profile" }, title: "Profile", class: "flex items-center justify-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 lg:justify-start" do %>
+      <%= link_to edit_user_registration_path, aria: { label: "Profile", current: (current_page?(edit_user_registration_path) ? "page" : nil) }, title: "Profile", class: class_names(
+        "flex items-center justify-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors lg:justify-start",
+        current_page?(edit_user_registration_path) ? "bg-neutral-50 text-neutral-950" : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950"
+      ) do %>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5 shrink-0">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
         </svg>

@@ -1,7 +1,7 @@
 Rails.application.routes.draw do
   # devise authentication routes
   devise_for :users
-  root to: "pages#home"
+  root to: "packages#new"
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
   # 7 CRUD routes for packages
