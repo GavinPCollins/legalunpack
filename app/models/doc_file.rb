@@ -2,9 +2,7 @@ class DocFile < ApplicationRecord
   MAX_FILE_SIZE = 25.megabytes
   ALLOWED_CONTENT_TYPES = [
     "application/pdf",
-    "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/vnd.oasis.opendocument.text",
     "application/rtf",
     "application/x-rtf",
     "text/rtf",
@@ -24,7 +22,7 @@ class DocFile < ApplicationRecord
     return unless file.attached?
     return if ALLOWED_CONTENT_TYPES.include?(file.blob.content_type)
 
-    errors.add(:file, "must be a PDF, DOC, DOCX, TXT, RTF, or ODT file")
+    errors.add(:file, "must be a PDF, DOCX, TXT, or RTF file")
   end
 
   def file_size

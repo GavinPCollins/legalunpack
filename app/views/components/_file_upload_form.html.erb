@@ -16,14 +16,14 @@
       <%= file_field_tag "files[]",
             id: "package_files",
             multiple: true,
-            accept: ".pdf,.doc,.docx,.txt,.rtf,.odt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text,application/rtf,application/x-rtf,text/rtf,text/plain",
+            accept: ".pdf,.docx,.txt,.rtf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/rtf,application/x-rtf,text/rtf,text/plain",
             data: { file_upload_target: "input", action: "change->file-upload#select" } %>
 
       <ul class="selected-files" data-file-upload-target="list" aria-live="polite"></ul>
     </div>
 
     <div class="upload-help">
-      Accepted file types: PDF, DOCX, DOC, TXT, RTF, ODT.
+      Accepted file types: PDF, DOCX, TXT, RTF.
     </div>
 
     <%# <div class="paste-panel"> %>

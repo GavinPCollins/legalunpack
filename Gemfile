@@ -76,3 +76,7 @@ end
 
 # Authentication
 gem "devise"
+gem "pdf-reader"
+gem "docx"
+gem "rtf"
+gem "ruby-openai"

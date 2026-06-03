@@ -26,7 +26,7 @@ class DocFileTest < ActiveSupport::TestCase
     )
 
     assert_not doc_file.valid?
-    assert_includes doc_file.errors[:file], "must be a PDF, DOC, DOCX, TXT, RTF, or ODT file"
+    assert_includes doc_file.errors[:file], "must be a PDF, DOCX, TXT, or RTF file"
   end
 
   test "rejects files over the size limit" do
