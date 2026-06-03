@@ -27,6 +27,8 @@ class PackagesController < ApplicationController
       attach_pasted_text(@package)
     end
 
+    ExtractPackageTextJob.perform_later(@package)
+
     redirect_to @package, notice: "Package created."
   rescue ActiveRecord::RecordInvalid
     render :new, status: :unprocessable_entity

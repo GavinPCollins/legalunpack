@@ -19,4 +19,31 @@ class Package < ApplicationRecord
                   }
 
   validates :name, presence: { message: "Must name package" }
+
+  def extraction_complete?
+    doc_files.any? && doc_files.all? { |doc_file| doc_file.extraction_status == "complete" }
+  end
+
+  def extraction_failed?
+    doc_files.any? { |doc_file| doc_file.extraction_status == "failed" }
+  end
+
+  def extraction_in_progress?
+    doc_files.any? { |doc_file| %w[pending processing].include?(doc_file.extraction_status) }
+  end
+
+  def extracted_text_for_ai
+    doc_files
+      .select { |doc_file| doc_file.extraction_status == "complete" && doc_file.extracted_text.present? }
+      .map do |doc_file|
+        filename = doc_file.file.attached? ? doc_file.file.filename.to_s : "Untitled file"
+
+        <<~TEXT.strip
+          File: #{filename}
+
+          #{doc_file.extracted_text}
+        TEXT
+      end
+      .join("\n\n---\n\n")
+  end
 end

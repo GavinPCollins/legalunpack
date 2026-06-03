@@ -1,3 +1,5 @@
+require "pdf/reader"
+require "docx"
 class ExtractFileText
   def self.call(doc_file)
     new(doc_file).call
@@ -14,12 +16,21 @@ class ExtractFileText
   def call
     file = @doc_file.file
 
-    case file.content_type
-    when "text/plain"
-      file.download
-    else
-      raise "Unsupported file type: #{file.content_type}"
-    end
+    text =
+      case file.content_type
+      when "text/plain"
+        file.download
+      when "application/pdf"
+        extract_pdf(file.download)
+      when "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        extract_docx(file.download)
+      when "application/rtf", "application/x-rtf", "text/rtf"
+        extract_rtf(file.download)
+      else
+        raise "Unsupported file type: #{file.content_type}"
+      end
+
+    normalize_text(text)
   end
 
   def save!
@@ -41,5 +52,43 @@ class ExtractFileText
     )
 
     raise
+  end
+
+  private
+
+  def extract_pdf(bytes)
+    reader = PDF::Reader.new(StringIO.new(bytes))
+
+    reader.pages.map(&:text).join("\n\n")
+  end
+
+  def extract_docx(bytes)
+    tempfile = Tempfile.new(["docx-upload", ".docx"])
+    tempfile.binmode
+    tempfile.write(bytes)
+    tempfile.rewind
+
+    document = Docx::Document.open(tempfile.path)
+    document.paragraphs.map(&:text).join("\n")
+  ensure
+    tempfile&.close
+    tempfile&.unlink
+  end
+
+  def extract_rtf(bytes)
+    bytes
+      .gsub(/\\'[0-9a-fA-F]{2}/, "")
+      .gsub(/\\[a-zA-Z]+\d* ?/, "")
+      .gsub(/[{}]/, "")
+      .gsub(/\r\n?/, "\n")
+      .strip
+  end
+
+  def normalize_text(text)
+    text
+      .gsub(/\r\n?/, "\n")
+      .gsub(/[ \t]+/, " ")
+      .gsub(/\n{3,}/, "\n\n")
+      .strip
   end
 end
