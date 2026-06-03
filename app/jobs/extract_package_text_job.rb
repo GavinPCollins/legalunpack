@@ -2,6 +2,7 @@ class ExtractPackageTextJob < ApplicationJob
   queue_as :default
 
   def perform(package)
+    # EXTRACT EACH FILE
     package.doc_files.find_each do |doc_file|
       ExtractFileText.save!(doc_file)
     rescue StandardError => error

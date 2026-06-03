@@ -27,6 +27,7 @@ class PackagesController < ApplicationController
       attach_pasted_text(@package)
     end
 
+    # ENQUEUE TEXT EXTRACTION
     ExtractPackageTextJob.perform_later(@package)
 
     redirect_to @package, notice: "Package created."

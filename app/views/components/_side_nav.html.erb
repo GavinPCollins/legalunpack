@@ -45,6 +45,7 @@
     <% if current_user&.packages&.any? %>
       <div class="pt-16 text-xs/6 font-semibold text-neutral-500">Packages</div>
       <ul role="list" class="-mx-2 space-y-1">
+        <%# SAVED PACKAGES %>
         <% current_user.packages.select { |pack| pack.persisted? && pack.name.present? }.each do |pack| %>
           <% package_active = selected_package_id == pack.id.to_s %>
           <li>

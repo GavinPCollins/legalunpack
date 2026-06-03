@@ -1,5 +1,7 @@
 require "pdf/reader"
 require "docx"
+
+# EXTRACT FILE TEXT
 class ExtractFileText
   def self.call(doc_file)
     new(doc_file).call
@@ -13,6 +15,7 @@ class ExtractFileText
     @doc_file = doc_file
   end
 
+  # RETURN EXTRACTED TEXT
   def call
     file = @doc_file.file
 
@@ -33,6 +36,7 @@ class ExtractFileText
     normalize_text(text)
   end
 
+  # SAVE EXTRACTED TEXT
   def save!
     @doc_file.update!(extraction_status: "processing")
 
@@ -56,12 +60,14 @@ class ExtractFileText
 
   private
 
+  # EXTRACT PDF
   def extract_pdf(bytes)
     reader = PDF::Reader.new(StringIO.new(bytes))
 
     reader.pages.map(&:text).join("\n\n")
   end
 
+  # EXTRACT DOCX
   def extract_docx(bytes)
     tempfile = Tempfile.new(["docx-upload", ".docx"])
     tempfile.binmode
@@ -75,6 +81,7 @@ class ExtractFileText
     tempfile&.unlink
   end
 
+  # EXTRACT RTF
   def extract_rtf(bytes)
     bytes
       .gsub(/\\'[0-9a-fA-F]{2}/, "")
@@ -84,6 +91,7 @@ class ExtractFileText
       .strip
   end
 
+  # NORMALIZE TEXT
   def normalize_text(text)
     text
       .gsub(/\r\n?/, "\n")

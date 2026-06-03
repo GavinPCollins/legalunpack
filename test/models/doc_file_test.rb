@@ -47,4 +47,28 @@ class DocFileTest < ActiveSupport::TestCase
 
     assert_equal "pending", doc_file.extraction_status
   end
+
+  test "ready for ai includes only complete files with extracted text" do
+    ready_doc_file = create_doc_file(extraction_status: "complete", extracted_text: "Ready text.")
+    create_doc_file(extraction_status: "pending", extracted_text: "Pending text.")
+    create_doc_file(extraction_status: "failed", extracted_text: "Failed text.")
+    create_doc_file(extraction_status: "complete", extracted_text: nil)
+    create_doc_file(extraction_status: "complete", extracted_text: "")
+
+    assert_equal [ ready_doc_file ], @package.doc_files.ready_for_ai.to_a
+  end
+
+  private
+
+  def create_doc_file(extraction_status:, extracted_text:)
+    @package.doc_files.create!(
+      extraction_status: extraction_status,
+      extracted_text: extracted_text,
+      file: {
+        io: StringIO.new("Sample legal text."),
+        filename: "#{extraction_status}-#{@package.doc_files.count}.txt",
+        content_type: "text/plain"
+      }
+    )
+  end
 end

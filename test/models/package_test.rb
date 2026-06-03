@@ -37,54 +37,14 @@ class PackageTest < ActiveSupport::TestCase
     assert_not @package.extraction_in_progress?
   end
 
-  test "formats completed extracted text for ai" do
-    create_doc_file(
-      extraction_status: "complete",
-      extracted_text: "First extracted text.",
-      filename: "first.txt"
-    )
-    create_doc_file(
-      extraction_status: "complete",
-      extracted_text: "Second extracted text.",
-      filename: "second.txt"
-    )
-
-    assert_equal <<~TEXT.strip, @package.extracted_text_for_ai
-      File: first.txt
-
-      First extracted text.
-
-      ---
-
-      File: second.txt
-
-      Second extracted text.
-    TEXT
-  end
-
-  test "excludes files that are not ready for ai" do
-    create_doc_file(extraction_status: "complete", extracted_text: "Ready text.", filename: "ready.txt")
-    create_doc_file(extraction_status: "pending", extracted_text: "Pending text.", filename: "pending.txt")
-    create_doc_file(extraction_status: "failed", extracted_text: "Failed text.", filename: "failed.txt")
-    create_doc_file(extraction_status: "complete", extracted_text: nil, filename: "empty.txt")
-
-    text = @package.extracted_text_for_ai
-
-    assert_includes text, "Ready text."
-    assert_no_match(/Pending text./, text)
-    assert_no_match(/Failed text./, text)
-    assert_no_match(/empty.txt/, text)
-  end
-
   private
 
-  def create_doc_file(extraction_status:, extracted_text: "Sample legal text.", filename: "#{extraction_status}.txt")
+  def create_doc_file(extraction_status:)
     @package.doc_files.create!(
       extraction_status: extraction_status,
-      extracted_text: extracted_text,
       file: {
         io: StringIO.new("Sample legal text."),
-        filename: filename,
+        filename: "#{extraction_status}.txt",
         content_type: "text/plain"
       }
     )
