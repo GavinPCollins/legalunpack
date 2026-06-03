@@ -1,21 +1,136 @@
-<section>
-  <h1><%= @package.name.presence || "Package" %></h1>
+<%# CODEX package page updates %>
+<section class="mx-auto flex w-full max-w-5xl flex-col gap-6 py-8">
+  <div id="package-name" class="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <div class="flex flex-col gap-5">
+      <div class="min-w-0">
+        <div class="flex items-start justify-between gap-4">
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-cyan-700">Package</p>
+            <h1 class="mt-2 truncate text-3xl font-semibold tracking-tight text-neutral-950">
+              <%= @package.name.presence || "Untitled package" %>
+            </h1>
+          </div>
 
-  <h2>Files</h2>
+          <%# CODEX package page updates %>
+          <details class="relative shrink-0">
+            <summary role="button" aria-haspopup="menu" aria-label="Package actions for <%= @package.name.presence || "Untitled package" %>" title="Package actions" class="flex size-9 cursor-pointer list-none items-center justify-center rounded-md text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-950 focus:bg-neutral-100 focus:text-neutral-950 focus:outline-none [&::-webkit-details-marker]:hidden">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-5">
+                <circle cx="12" cy="5" r="1.6" />
+                <circle cx="12" cy="12" r="1.6" />
+                <circle cx="12" cy="19" r="1.6" />
+              </svg>
+            </summary>
+            <% unless params[:edit] == "name" %>
+              <div role="menu" class="absolute right-0 z-20 mt-1 w-44 rounded-md border border-neutral-200 bg-white py-1 shadow-sm">
+                <%= link_to "Edit package name", package_path(@package, edit: "name", anchor: "rename-package"), role: "menuitem", class: "block px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-cyan-50 hover:text-cyan-950" %>
+              </div>
+            <% end %>
+          </details>
+        </div>
 
-  <% if @package.doc_files.any? %>
-    <ul>
-      <% @package.doc_files.each do |doc_file| %>
-        <li>
-          <% if doc_file.file.attached? %>
-            <%= link_to doc_file.file.filename.to_s, rails_blob_path(doc_file.file, disposition: "attachment") %>
-          <% else %>
-            Untitled file
-          <% end %>
-        </li>
+        <p class="mt-2 text-sm text-neutral-500">
+          Created <%= @package.created_at.to_fs(:long) %>
+        </p>
+      </div>
+
+      <%# CODEX package page updates %>
+      <% if params[:edit] == "name" %>
+      <div id="rename-package" class="rounded-md border border-neutral-200 bg-neutral-50 p-4">
+        <h2 class="text-sm font-semibold text-cyan-800">Edit package name</h2>
+        <%= form_with model: @package, class: "mt-4 space-y-4" do |form| %>
+          <div>
+            <%= form.label :name, "Package name", class: "block text-sm font-medium text-neutral-700" %>
+            <%= form.text_field :name,
+                  class: "mt-2 block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-neutral-950 outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-100" %>
+            <% @package.errors.full_messages_for(:name).each do |message| %>
+              <p class="mt-2 text-sm text-red-600"><%= message %></p>
+            <% end %>
+          </div>
+
+          <div class="flex justify-end">
+            <%= form.submit "Save name", class: "rounded-md bg-cyan-950 px-4 py-2 text-sm font-semibold text-neutral-50 hover:bg-cyan-900" %>
+          </div>
+        <% end %>
+      </div>
       <% end %>
-    </ul>
-  <% else %>
-    <p>No files uploaded yet.</p>
-  <% end %>
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <div class="flex items-center justify-between gap-4">
+      <div>
+        <h2 class="text-lg font-semibold text-neutral-950">Files</h2>
+        <p class="mt-1 text-sm text-neutral-500">
+          <%= pluralize(@package.doc_files.count, "uploaded file") %>
+        </p>
+      </div>
+      <%# CODEX add document updates %>
+      <details class="relative shrink-0">
+        <summary role="button" class="cursor-pointer list-none rounded-md bg-cyan-950 px-4 py-2 text-sm font-semibold text-neutral-50 hover:bg-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 [&::-webkit-details-marker]:hidden">
+          Add document
+        </summary>
+        <div class="absolute right-0 z-20 mt-2 w-80 rounded-md border border-neutral-200 bg-white p-4 shadow-sm lg:w-96">
+          <%= form_with url: doc_files_path, multipart: true, data: { controller: "file-upload" }, class: "space-y-4" do %>
+            <%= hidden_field_tag :package_id, @package.id %>
+            <div class="rounded-md border-2 border-dashed border-neutral-300 bg-neutral-50 p-6 text-center" data-file-upload-target="dropzone" data-action="dragover->file-upload#dragover drop->file-upload#drop">
+              <p class="text-sm font-medium text-neutral-950">Drop files here</p>
+              <p class="mt-1 text-xs text-neutral-500">PDF, DOCX, TXT, RTF</p>
+              <%= label_tag :package_document_files, "Select files", class: "mt-4 inline-flex cursor-pointer rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50" %>
+              <%= file_field_tag "files[]",
+                    id: "package_document_files",
+                    multiple: true,
+                    accept: ".pdf,.docx,.txt,.rtf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/rtf,application/x-rtf,text/rtf,text/plain",
+                    class: "sr-only",
+                    data: { file_upload_target: "input", action: "change->file-upload#select" } %>
+            </div>
+            <ul class="space-y-2 text-left text-sm text-neutral-700" data-file-upload-target="list" aria-live="polite"></ul>
+            <div class="flex justify-end">
+              <%= submit_tag "Upload", class: "rounded-md bg-cyan-950 px-4 py-2 text-sm font-semibold text-neutral-50 hover:bg-cyan-900" %>
+            </div>
+          <% end %>
+        </div>
+      </details>
+    </div>
+
+    <% @package.errors[:base].each do |message| %>
+      <p class="mt-4 text-sm text-red-600"><%= message %></p>
+    <% end %>
+
+    <% if @package.doc_files.any? %>
+      <ul class="mt-5 divide-y divide-neutral-200 rounded-md border border-neutral-200">
+        <% @package.doc_files.each do |doc_file| %>
+          <li class="flex items-center justify-between gap-4 px-4 py-3">
+            <div class="flex min-w-0 items-center gap-3">
+              <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-cyan-50 text-cyan-800">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-5.1a2.25 2.25 0 0 0-.659-1.591l-3.9-3.9A2.25 2.25 0 0 0 13.35 3H6.75A2.25 2.25 0 0 0 4.5 5.25v13.5A2.25 2.25 0 0 0 6.75 21h10.5a2.25 2.25 0 0 0 2.25-2.25v-4.5Z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 3.375V7.5A1.5 1.5 0 0 0 15 9h4.125" />
+                </svg>
+              </span>
+              <div class="min-w-0">
+                <% if doc_file.file.attached? %>
+                  <p class="truncate text-sm font-medium text-neutral-950"><%= doc_file.file.filename.to_s %></p>
+                  <p class="mt-0.5 text-xs text-neutral-500"><%= number_to_human_size(doc_file.file.byte_size) %></p>
+                <% else %>
+                  <p class="text-sm font-medium text-neutral-950">Untitled file</p>
+                <% end %>
+              </div>
+            </div>
+
+            <div class="flex shrink-0 items-center gap-1">
+              <% if doc_file.file.attached? %>
+                <%= link_to "Download", rails_blob_path(doc_file.file, disposition: "attachment"), class: "rounded-md px-3 py-2 text-sm font-semibold text-cyan-800 hover:bg-cyan-50 hover:text-cyan-950" %>
+              <% end %>
+              <%= button_to "Remove", doc_file_path(doc_file), method: :delete, class: "rounded-md px-3 py-2 text-sm font-semibold text-cyan-800 hover:bg-red-50" %>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <div class="mt-5 rounded-md border border-dashed border-neutral-300 px-4 py-10 text-center">
+        <p class="text-sm font-medium text-neutral-950">No files uploaded yet</p>
+        <p class="mt-1 text-sm text-neutral-500">Use Add document to upload legal files to this package.</p>
+      </div>
+    <% end %>
+  </div>
 </section>
