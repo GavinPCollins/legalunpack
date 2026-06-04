@@ -27,8 +27,13 @@ class PackagesController < ApplicationController
       attach_pasted_text(@package)
     end
 
+    # ENQUEUE TEXT EXTRACTION
+    ExtractPackageTextJob.perform_later(@package)
+
     redirect_to @package, notice: "Package created."
-  rescue ActiveRecord::RecordInvalid
+  rescue ActiveRecord::RecordInvalid => error
+    add_child_record_errors(error.record)
+
     render :new, status: :unprocessable_entity
   end
 
@@ -89,5 +94,13 @@ class PackagesController < ApplicationController
         content_type: "text/plain"
       }
     )
+  end
+
+  def add_child_record_errors(record)
+    return unless record.respond_to?(:errors)
+
+    record.errors.full_messages.each do |message|
+      @package.errors.add(:base, message)
+    end
   end
 end

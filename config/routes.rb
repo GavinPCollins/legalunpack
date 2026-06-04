@@ -12,7 +12,7 @@ Rails.application.routes.draw do
   #   end
   # end
 
-  # standalone resource for file uploads ... no editing of raw files.
+  # CODEX add document updates
   resources :doc_files, only: [:create, :destroy]
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

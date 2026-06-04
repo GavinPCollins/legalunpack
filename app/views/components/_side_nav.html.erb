@@ -47,20 +47,36 @@
       </li>
     </ul>
 
+    <%# CODEX package list updates %>
+    <% sidebar_packages = current_user.packages.where.not(name: [nil, ""]).order(created_at: :desc) %>
+
     <%# ====== Collection (packages) ====== %>
-    <% saved_packages = current_user&.packages&.select { |pack| pack.persisted? && pack.name.present? } || [] %>
-    <% if saved_packages.any? %>
+    <% if sidebar_packages.any? %>
       <div class="pt-16 text-xs/6 font-semibold text-neutral-500">Packages</div>
       <ul role="list" class="-mx-2 space-y-1">
-        <% saved_packages.each do |pack| %>
+        <% sidebar_packages.each do |pack| %>
           <% package_active = selected_package_id == pack.id.to_s %>
-          <li>
+          <li class="group relative flex items-center gap-1">
             <%= link_to package_path(pack), aria: { current: (package_active ? "page" : nil) }, class: class_names(
-              "group flex gap-x-3 rounded-md p-2 text-sm/6 font-medium",
+              "min-w-0 flex-1 rounded-md p-2 text-sm/6 font-medium",
               package_active ? "bg-neutral-50 text-neutral-950" : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950"
             ) do %>
               <span class="truncate"><%= pack.name %></span>
             <% end %>
+
+            <%# CODEX package actions updates %>
+            <details class="relative shrink-0">
+              <summary role="button" aria-haspopup="menu" aria-label="Package actions for <%= pack.name %>" title="Package actions" class="flex size-8 cursor-pointer list-none items-center justify-center rounded-md text-neutral-500 opacity-100 transition hover:bg-neutral-50 hover:text-neutral-950 focus:bg-neutral-50 focus:text-neutral-950 focus:outline-none lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 [&::-webkit-details-marker]:hidden">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-5">
+                  <circle cx="12" cy="5" r="1.6" />
+                  <circle cx="12" cy="12" r="1.6" />
+                  <circle cx="12" cy="19" r="1.6" />
+                </svg>
+              </summary>
+              <div role="menu" class="absolute right-0 z-20 mt-1 w-40 rounded-md border border-neutral-200 bg-white py-1 shadow-sm">
+                <%= link_to "Edit name", package_path(pack, edit: "name", anchor: "package-name"), role: "menuitem", class: "block px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-cyan-50 hover:text-cyan-950" %>
+              </div>
+            </details>
           </li>
         <% end %>
       </ul>

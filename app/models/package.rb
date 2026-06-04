@@ -21,4 +21,19 @@ class Package < ApplicationRecord
                   }
 
   validates :name, presence: { message: "Must name package" }
+
+  # CHECK EXTRACTION COMPLETE
+  def extraction_complete?
+    doc_files.any? && doc_files.all? { |doc_file| doc_file.extraction_status == "complete" }
+  end
+
+  # CHECK EXTRACTION FAILED
+  def extraction_failed?
+    doc_files.any? { |doc_file| doc_file.extraction_status == "failed" }
+  end
+
+  # CHECK EXTRACTION IN PROGRESS
+  def extraction_in_progress?
+    doc_files.any? { |doc_file| %w[pending processing].include?(doc_file.extraction_status) }
+  end
 end
