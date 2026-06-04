@@ -183,4 +183,5 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to packages_url
   end
+
 end

@@ -22,14 +22,25 @@
     <%= javascript_importmap_tags %>
   </head>
 
+<%# >> Style A (Old) - stright top to bottom line border << %>
   <body class="min-h-screen h-full bg-neutral-50 text-neutral-950">
+
+<%#  >> Style B (New) - rounded center, no right border to nav << %>
+  <%# <body class="min-h-screen h-full bg-neutral-100 text-neutral-950"> %>
+
+    <%# -- User Pages -- %>
     <% if user_signed_in? %>
       <div class="flex min-h-screen">
         <%= render "components/side_nav" %>
-        <main class="min-w-0 flex-1 px-6 py-10 lg:px-10">
+
+<%# >> Style A (Old) - stright top to bottom line border << %>
+<%#  >> Style B (New) - rounded center, no right border to nav << %>
+        <main class="min-w-0 flex-1 px-6 mt-8 mr-8 rounded-md border-neutral-300 bg-neutral-50 py-10 lg:px-10">
           <%= yield %>
         </main>
       </div>
+
+    <%# -- no user --  %>
     <% else %>
       <header class="border-b border-neutral-200 bg-white">
         <nav class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
@@ -40,9 +51,11 @@
           </div>
         </nav>
       </header>
-      <main class="mx-auto flex w-full max-w-6xl px-5 py-12">
+      <main class="mx-auto flex w-full max-w-6xl px-5 py-12 mt-8 border-neutral-200">
         <%= yield %>
       </main>
     <% end %>
+
+
   </body>
 </html>

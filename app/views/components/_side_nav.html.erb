@@ -1,6 +1,19 @@
-<aside class="flex min-h-screen w-20 shrink-0 flex-col border-r border-neutral-200 bg-neutral-100 px-2 py-5 lg:w-64 lg:px-4">
+<%# >> Style A (Old) - stright top to bottom line border << %>
+<%# Responsive sizing note:
+    - The side-nav class now owns the sidebar sizing.
+    - Inside that class, unprefixed utilities are the mobile/default size.
+    - md: utilities apply from tablet upward.
+    - lg: utilities apply only from desktop upward.
+    - If tablet and desktop should use the same expanded sidebar, define sizing as:
+      w-20 px-2 md:w-64 md:px-4. %>
+<aside class="side-nav">
+
+<%#  >> Style B (New) - rounded center, no right border to nav << %>
+<%# <aside class="flex min-h-screen w-20 shrink-0 flex-col bg-neutral-100 px-2 py-5 lg:w-64 lg:px-4"> %>
+
   <%# ====== Logo section ====== %>
   <div class="mb-8 flex shrink-0 items-start px-2">
+
     <%= link_to root_path, aria: { label: "Legalunpack" }, class: "flex items-center justify-center gap-3 px-2 text-neutral-950 lg:justify-start" do %>
       <%= image_tag "Logo9.svg", alt: "Legalunpack", class: "h-12 w-auto max-w-full object-contain" %>
     <% end %>
@@ -13,6 +26,11 @@
     <% selected_package_id = packages_controller_active && %w[show edit update].include?(action_name) ? params[:id].to_s : nil %>
 
     <%# ====== Nav - Parts ====== %>
+    <%# Responsive nav note:
+        - Links are centered by default with justify-center.
+        - Labels are hidden by default with hidden.
+        - lg:justify-start and lg:inline make labels/layout desktop-only.
+        - Change those prefixes to md: if tablet should match desktop. %>
     <ul class="mt-4 space-y-1">
       <%# --- new package --- %>
       <li>
@@ -77,6 +95,11 @@
     <% end %>
 
     <%# ====== Account ====== %>
+    <%# Responsive account note:
+        - Avatar remains visible at all sizes.
+        - Account text is hidden by default with hidden.
+        - lg:block shows account text on desktop only.
+        - Change lg:block to md:block if tablet should show account text too. %>
     <div class="mt-auto border-t border-neutral-200 pt-4">
       <div class="flex items-center justify-center gap-3 pb-3 lg:justify-start">
         <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-50 text-sm font-bold text-neutral-700 outline -outline-offset-1 outline-black/5">
