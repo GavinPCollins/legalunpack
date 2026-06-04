@@ -5,7 +5,10 @@ Rails.application.routes.draw do
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
   # 7 CRUD routes for packages
-  resources :packages # do opens block for nested routes
+  resources :packages do # do opens block for nested routes
+    post :analyze, on: :member
+    get :analysis, on: :member
+  end
   #   resources :clauses, only: [:index, :show] # Clauses nested inside packages .. create & edit are an AI finction
   #   resources :chats, only: [:show, :create] do # Chats nested inside packages
   #     resources :messages, only: [:create] # messages nested inside chats

@@ -30,12 +30,45 @@
 
     <%# -- User Pages -- %>
     <% if user_signed_in? %>
-      <div class="flex min-h-screen">
-        <%= render "components/side_nav" %>
+      <div data-controller="sidebar" data-action="keydown@window->sidebar#closeOnEscape">
+        <%# Mobile drawer: hidden by default, opened by the top-bar menu button. %>
+        <div class="mobile-sidebar-shell hidden" data-sidebar-target="drawer">
+          <button type="button" class="mobile-sidebar-backdrop" aria-label="Close sidebar" data-sidebar-target="backdrop" data-action="sidebar#close"></button>
+          <div class="fixed inset-0 flex">
+            <aside class="mobile-sidebar-panel" data-sidebar-target="panel">
+              <div class="absolute left-full top-0 flex w-16 justify-center pt-5">
+                <button type="button" class="-m-2.5 p-2.5 text-white" aria-label="Close sidebar" data-action="sidebar#close">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <%= render "components/side_nav" %>
+            </aside>
+          </div>
+        </div>
 
-<%# >> Style A (Old) - stright top to bottom line border << %>
-<%#  >> Style B (New) - rounded center, no right border to nav << %>
-        <main class="min-w-0 flex-1 px-6 mt-8 mr-8 rounded-md border-neutral-300 bg-neutral-50 py-10 lg:px-10">
+        <%# Desktop sidebar: fixed in place from the large breakpoint upward. %>
+        <aside class="side-nav-desktop">
+          <%= render "components/side_nav" %>
+        </aside>
+
+        <%# Mobile top bar: gives small screens a clear drawer trigger. %>
+        <header class="mobile-top-bar">
+          <button type="button" class="-m-2.5 p-2.5 text-neutral-700 hover:text-neutral-950" aria-label="Open sidebar" data-action="sidebar#open">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
+          <%= link_to root_path, aria: { label: "Legalunpack" }, class: "min-w-0 flex-1" do %>
+            <%= image_tag "shapeC.svg", alt: "Legalunpack", class: "h-8 w-auto max-w-full object-contain" %>
+          <% end %>
+          <%= link_to edit_user_registration_path, aria: { label: "Profile" }, class: "flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-sm font-bold text-neutral-700 outline -outline-offset-1 outline-black/5" do %>
+            <%= (current_user.try(:name).presence || current_user.username.presence || current_user.email).first.upcase %>
+          <% end %>
+        </header>
+
+        <main class="app-main">
           <%= yield %>
         </main>
       </div>

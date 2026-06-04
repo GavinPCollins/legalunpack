@@ -64,7 +64,69 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
 
   test "should get show" do
     get package_url(@package)
+
     assert_response :success
+    assert_select "form[action='#{package_path(@package)}'][method='post'] button", text: "Delete package", count: 2
+  end
+
+  test "should enqueue text extraction when opening package with unextracted files" do
+    @package.doc_files.create!(
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+
+    assert_enqueued_with(job: ExtractPackageTextJob, args: [ @package ]) do
+      get package_url(@package)
+    end
+
+    assert_response :success
+  end
+
+  test "should not enqueue text extraction when opening package with extracted files only" do
+    @package.doc_files.create!(
+      extraction_status: "complete",
+      extracted_text: "Already extracted.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+
+    assert_no_enqueued_jobs(only: ExtractPackageTextJob) do
+      get package_url(@package)
+    end
+
+    assert_response :success
+  end
+
+  test "should get analysis" do
+    doc_file = @package.doc_files.create!(
+      extraction_status: "complete",
+      extracted_text: "Payment is due within 14 days.",
+      ai_status: "complete",
+      ai_summary: "This file sets payment obligations.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    @package.clauses.create!(
+      doc_file: doc_file,
+      title: "Payment",
+      content: "Payment is due within 14 days.",
+      risk_level: "low",
+      summary: "Sets a payment deadline.",
+      position: 1
+    )
+
+    get analysis_package_url(@package)
+
+    assert_response :success
+    assert_includes response.body, "This file sets payment obligations."
+    assert_includes response.body, "Payment"
+    assert_includes response.body, "Sets a payment deadline."
+  end
+
+  test "should not get analysis for another user's package" do
+    other_user = User.create!(email: "analysis-page-other@example.com", password: "password", username: "analysispageother")
+    other_package = other_user.packages.create!(name: "Private analysis")
+
+    get analysis_package_url(other_package)
+
+    assert_response :not_found
   end
 
   test "should get new" do
@@ -184,4 +246,23 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to packages_url
   end
 
+  test "should enqueue package ai analysis" do
+    assert_enqueued_with(job: AnalyzePackageFilesJob, args: [ @package ]) do
+      post analyze_package_url(@package)
+    end
+
+    assert_redirected_to package_url(@package)
+    assert_equal "AI analysis started.", flash[:notice]
+  end
+
+  test "should not enqueue ai analysis for another user's package" do
+    other_user = User.create!(email: "analysis-other@example.com", password: "password", username: "analysisother")
+    other_package = other_user.packages.create!(name: "Private analysis")
+
+    assert_no_enqueued_jobs(only: AnalyzePackageFilesJob) do
+      post analyze_package_url(other_package)
+    end
+
+    assert_response :not_found
+  end
 end

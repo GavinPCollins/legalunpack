@@ -12,6 +12,7 @@
 <% borderless_method = local_assigns[:borderless_method] || :get %>
 <% borderless_type = local_assigns[:borderless_type] || :link %>
 <% borderless_data = local_assigns[:borderless_data] || {} %>
+<% borderless_form = local_assigns[:borderless_form] || {} %>
 
 <%# - Secondery button - %>
 <% secondary_method = local_assigns[:secondary_method] || :get %>
@@ -66,7 +67,7 @@
           <% elsif borderless_method == :get %>
             <%= link_to borderless_label, borderless_path, class: borderless_classes %>
           <% else %>
-            <%= button_to borderless_label, borderless_path, method: borderless_method, class: "#{borderless_classes} border-0 bg-transparent", form_class: "inline-flex" %>
+            <%= button_to borderless_label, borderless_path, method: borderless_method, class: "#{borderless_classes} border-0 bg-transparent", form_class: "inline-flex", form: borderless_form %>
           <% end %>
         <% end %>
 
