@@ -76,6 +76,13 @@ class DocFileTest < ActiveSupport::TestCase
     assert_equal [ ready_doc_file ], @package.doc_files.ready_for_ai.to_a
   end
 
+  test "needs text extraction includes old files with nil extraction status" do
+    old_doc_file = create_doc_file(extraction_status: "pending", extracted_text: nil)
+    old_doc_file.update_column(:extraction_status, nil)
+
+    assert_includes @package.doc_files.needs_text_extraction, old_doc_file
+  end
+
   private
 
   def create_doc_file(extraction_status:, extracted_text:)

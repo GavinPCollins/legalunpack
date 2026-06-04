@@ -18,6 +18,10 @@ class DocFile < ApplicationRecord
 
   # AI-READY FILES
   scope :ready_for_ai, -> { where(extraction_status: "complete").where.not(extracted_text: [nil, ""]) }
+  scope :needs_text_extraction, -> {
+    where(extraction_status: [ nil, "pending" ])
+      .or(where(extraction_status: "complete", extracted_text: [ nil, "" ]))
+  }
 
   validates :file, presence: true
   validate :file_content_type

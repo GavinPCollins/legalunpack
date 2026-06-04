@@ -14,8 +14,10 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
   test "should add uploaded document to current user package" do
     uploaded_file = fixture_file_upload("sample.txt", "text/plain")
 
-    assert_difference("DocFile.count", 1) do
-      post doc_files_url, params: { package_id: @package.id, files: [uploaded_file] }
+    assert_enqueued_with(job: ExtractPackageTextJob, args: [ @package ]) do
+      assert_difference("DocFile.count", 1) do
+        post doc_files_url, params: { package_id: @package.id, files: [uploaded_file] }
+      end
     end
 
     assert_redirected_to package_url(@package)

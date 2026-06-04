@@ -23,6 +23,7 @@
             <% unless params[:edit] == "name" %>
               <div role="menu" class="absolute right-0 z-20 mt-1 w-44 rounded-md border border-neutral-200 bg-white py-1 shadow-sm">
                 <%= link_to "Edit package name", package_path(@package, edit: "name", anchor: "rename-package"), role: "menuitem", class: "block px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-cyan-50 hover:text-cyan-950" %>
+                <%= button_to "Delete package", package_path(@package), method: :delete, role: "menuitem", form: { data: { turbo_confirm: "Delete #{@package.name.presence || "this package"}?" } }, class: "block w-full px-3 py-2 text-left text-sm font-medium text-red-700 hover:bg-red-50 hover:text-red-900" %>
               </div>
             <% end %>
           </details>
