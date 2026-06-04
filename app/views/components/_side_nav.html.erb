@@ -1,6 +1,12 @@
+<%# >> Style A (Old) - stright top to bottom line border << %>
 <aside class="flex min-h-screen w-20 shrink-0 flex-col border-r border-neutral-200 bg-neutral-100 px-2 py-5 lg:w-64 lg:px-4">
+
+<%#  >> Style B (New) - rounded center, no right border to nav << %>
+<%# <aside class="flex min-h-screen w-20 shrink-0 flex-col bg-neutral-100 px-2 py-5 lg:w-64 lg:px-4"> %>
+
   <%# ====== Logo section ====== %>
   <div class="mb-8 flex shrink-0 items-start px-2">
+
     <%= link_to root_path, aria: { label: "Legalunpack" }, class: "flex items-center justify-center gap-3 px-2 text-neutral-950 lg:justify-start" do %>
       <%= image_tag "Logo9.svg", alt: "Legalunpack", class: "h-12 w-auto max-w-full object-contain" %>
     <% end %>
@@ -42,10 +48,11 @@
     </ul>
 
     <%# ====== Collection (packages) ====== %>
-    <% if current_user&.packages&.any? %>
+    <% saved_packages = current_user&.packages&.select { |pack| pack.persisted? && pack.name.present? } || [] %>
+    <% if saved_packages.any? %>
       <div class="pt-16 text-xs/6 font-semibold text-neutral-500">Packages</div>
       <ul role="list" class="-mx-2 space-y-1">
-        <% current_user.packages.select { |pack| pack.name.present? }.each do |pack| %>
+        <% saved_packages.each do |pack| %>
           <% package_active = selected_package_id == pack.id.to_s %>
           <li>
             <%= link_to package_path(pack), aria: { current: (package_active ? "page" : nil) }, class: class_names(

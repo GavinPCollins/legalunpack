@@ -1,3 +1,5 @@
+require "pg_search/model"
+
 class Package < ApplicationRecord
   # CODEX search function updates
   include PgSearch::Model

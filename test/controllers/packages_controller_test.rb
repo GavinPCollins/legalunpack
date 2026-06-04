@@ -13,7 +13,7 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
   test "should get index" do
     get packages_url
     assert_response :success
-    assert_no_includes response.body, "Lease review"
+    refute_includes search_results_text, "Lease review"
   end
 
   # CODEX search function updates
@@ -23,8 +23,8 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     get packages_url, params: { q: "court" }
 
     assert_response :success
-    assert_includes response.body, "Court notice"
-    assert_no_includes response.body, "Lease review"
+    assert_includes search_results_text, "Court notice"
+    refute_includes search_results_text, "Lease review"
   end
 
   # CODEX search function updates
@@ -35,9 +35,9 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     get packages_url, params: { q: "sample" }
 
     assert_response :success
-    assert_includes response.body, "Employment contract"
-    assert_includes response.body, "sample.txt"
-    assert_no_includes response.body, "Lease review"
+    assert_includes search_results_text, "Employment contract"
+    assert_includes search_results_text, "sample.txt"
+    refute_includes search_results_text, "Lease review"
   end
 
   # CODEX search function updates
@@ -49,7 +49,7 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     get packages_url, params: { q: "private" }
 
     assert_response :success
-    assert_no_includes response.body, "Private settlement"
+    refute_includes search_results_text, "Private settlement"
   end
 
   test "should get show" do
@@ -130,5 +130,11 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to packages_url
+  end
+
+  private
+
+  def search_results_text
+    Nokogiri::HTML(response.body).at_css("turbo-frame#package_search_results").text
   end
 end
