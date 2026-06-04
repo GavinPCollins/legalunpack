@@ -1,20 +1,12 @@
-<%# >> Style A (Old) - stright top to bottom line border << %>
-<%# Responsive sizing note:
-    - The side-nav class now owns the sidebar sizing.
-    - Inside that class, unprefixed utilities are the mobile/default size.
-    - md: utilities apply from tablet upward.
-    - lg: utilities apply only from desktop upward.
-    - If tablet and desktop should use the same expanded sidebar, define sizing as:
-      w-20 px-2 md:w-64 md:px-4. %>
-<aside class="side-nav">
-
-<%#  >> Style B (New) - rounded center, no right border to nav << %>
-<%# <aside class="flex min-h-screen w-20 shrink-0 flex-col bg-neutral-100 px-2 py-5 lg:w-64 lg:px-4"> %>
-
+<%# Sidebar contents are rendered in two shells:
+    - mobile drawer in the application layout
+    - fixed desktop sidebar in the application layout
+    Keep navigation logic here; keep responsive drawer behaviour in the layout. %>
+<div class="side-nav-inner">
   <%# ====== Logo section ====== %>
   <div class="mb-8 flex shrink-0 items-start px-2">
 
-    <%= link_to root_path, aria: { label: "Legalunpack" }, class: "flex items-center justify-center gap-3 px-2 text-neutral-950 lg:justify-start" do %>
+    <%= link_to root_path, aria: { label: "Legalunpack" }, class: "flex items-center justify-start gap-3 px-2 text-neutral-950" do %>
       <%= image_tag "Logo9.svg", alt: "Legalunpack", class: "h-12 w-auto max-w-full object-contain" %>
     <% end %>
   </div>
@@ -26,35 +18,32 @@
     <% selected_package_id = packages_controller_active && %w[show edit update].include?(action_name) ? params[:id].to_s : nil %>
 
     <%# ====== Nav - Parts ====== %>
-    <%# Responsive nav note:
-        - Links are centered by default with justify-center.
-        - Labels are hidden by default with hidden.
-        - lg:justify-start and lg:inline make labels/layout desktop-only.
-        - Change those prefixes to md: if tablet should match desktop. %>
+    <%# Links keep labels visible in both shells.
+        The whole sidebar is hidden on mobile until the drawer opens. %>
     <ul class="mt-4 space-y-1">
       <%# --- new package --- %>
       <li>
         <%= link_to new_package_path, aria: { label: "New package", current: (new_package_active ? "page" : nil) }, title: "New package", class: class_names(
-          "group flex items-center justify-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors lg:justify-start",
+          "group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors",
           new_package_active ? "bg-neutral-50 text-neutral-950" : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950"
         ) do %>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5 shrink-0">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
-          <span class="hidden lg:inline">New package</span>
+          <span>New package</span>
         <% end %>
       </li>
 
       <%# CODEX search function updates %>
       <li>
         <%= link_to packages_path, aria: { label: "Search packages", current: (packages_index_active ? "page" : nil) }, title: "Search packages", class: class_names(
-          "group flex items-center justify-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors lg:justify-start",
+          "group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors",
           packages_index_active ? "bg-neutral-50 text-neutral-950" : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950"
         ) do %>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5 shrink-0">
             <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m1.35-5.4a6.75 6.75 0 1 1-13.5 0 6.75 6.75 0 0 1 13.5 0Z" />
           </svg>
-          <span class="hidden lg:inline">Search packages</span>
+          <span>Search packages</span>
         <% end %>
       </li>
     </ul>
@@ -95,38 +84,34 @@
     <% end %>
 
     <%# ====== Account ====== %>
-    <%# Responsive account note:
-        - Avatar remains visible at all sizes.
-        - Account text is hidden by default with hidden.
-        - lg:block shows account text on desktop only.
-        - Change lg:block to md:block if tablet should show account text too. %>
+    <%# Account controls stay at the bottom of both sidebar shells. %>
     <div class="mt-auto border-t border-neutral-200 pt-4">
-      <div class="flex items-center justify-center gap-3 pb-3 lg:justify-start">
+      <div class="flex items-center gap-3 pb-3">
         <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-50 text-sm font-bold text-neutral-700 outline -outline-offset-1 outline-black/5">
           <%= (current_user.try(:name).presence || current_user.username.presence || current_user.email).first.upcase %>
         </span>
-        <div class="hidden min-w-0 lg:block">
+        <div class="min-w-0">
           <p class="truncate text-sm font-semibold text-neutral-950"><%= current_user.try(:name).presence || current_user.username.presence || "Account" %></p>
           <p class="truncate text-xs text-neutral-500"><%= current_user.email %></p>
         </div>
       </div>
 
       <%= link_to edit_user_registration_path, aria: { label: "Profile", current: (current_page?(edit_user_registration_path) ? "page" : nil) }, title: "Profile", class: class_names(
-        "flex items-center justify-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors lg:justify-start",
+        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
         current_page?(edit_user_registration_path) ? "bg-neutral-50 text-neutral-950" : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950"
       ) do %>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5 shrink-0">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
         </svg>
-        <span class="hidden lg:inline">Profile</span>
+        <span>Profile</span>
       <% end %>
 
-      <%= button_to destroy_user_session_path, method: :delete, aria: { label: "Log out" }, title: "Log out", class: "flex w-full items-center justify-center gap-3 rounded-md px-3 py-2 text-left text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-950 lg:justify-start" do %>
+      <%= button_to destroy_user_session_path, method: :delete, aria: { label: "Log out" }, title: "Log out", class: "flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-950" do %>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5 shrink-0">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
         </svg>
-        <span class="hidden lg:inline">Log out</span>
+        <span>Log out</span>
       <% end %>
     </div>
   </nav>
-</aside>
+</div>
