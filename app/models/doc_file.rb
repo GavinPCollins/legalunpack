@@ -10,8 +10,10 @@ class DocFile < ApplicationRecord
   ].freeze
 
   EXTRACTION_STATUSES = %w[pending processing complete failed].freeze
+  AI_STATUSES = %w[pending processing complete failed].freeze
 
   belongs_to :package
+  has_many :clauses, dependent: :nullify
   has_one_attached :file
 
   # AI-READY FILES
@@ -21,9 +23,10 @@ class DocFile < ApplicationRecord
   validate :file_content_type
   validate :file_size
   validates :extraction_status, inclusion: { in: EXTRACTION_STATUSES }
+  validates :ai_status, inclusion: { in: AI_STATUSES }
 
   # SET DEFAULT STATUS
-  after_initialize :set_default_extraction_status, if: :new_record?
+  after_initialize :set_default_statuses, if: :new_record?
 
   private
 
@@ -44,7 +47,8 @@ class DocFile < ApplicationRecord
   end
 
   # DEFAULT TO PENDING
-  def set_default_extraction_status
+  def set_default_statuses
     self.extraction_status ||= "pending"
+    self.ai_status ||= "pending"
   end
 end

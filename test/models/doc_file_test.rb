@@ -48,6 +48,24 @@ class DocFileTest < ActiveSupport::TestCase
     assert_equal "pending", doc_file.extraction_status
   end
 
+  test "defaults ai status to pending" do
+    doc_file = @package.doc_files.build
+
+    assert_equal "pending", doc_file.ai_status
+  end
+
+  test "ai status must be valid" do
+    doc_file = @package.doc_files.build(ai_status: "queued")
+    doc_file.file.attach(
+      io: StringIO.new("Sample legal text."),
+      filename: "sample.txt",
+      content_type: "text/plain"
+    )
+
+    assert_not doc_file.valid?
+    assert_includes doc_file.errors[:ai_status], "is not included in the list"
+  end
+
   test "ready for ai includes only complete files with extracted text" do
     ready_doc_file = create_doc_file(extraction_status: "complete", extracted_text: "Ready text.")
     create_doc_file(extraction_status: "pending", extracted_text: "Pending text.")
