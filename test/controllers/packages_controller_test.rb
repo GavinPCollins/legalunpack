@@ -64,6 +64,34 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
 
   test "should get show" do
     get package_url(@package)
+
+    assert_response :success
+    assert_select "form[action='#{package_path(@package)}'][method='post'] button", text: "Delete package", count: 2
+  end
+
+  test "should enqueue text extraction when opening package with unextracted files" do
+    @package.doc_files.create!(
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+
+    assert_enqueued_with(job: ExtractPackageTextJob, args: [ @package ]) do
+      get package_url(@package)
+    end
+
+    assert_response :success
+  end
+
+  test "should not enqueue text extraction when opening package with extracted files only" do
+    @package.doc_files.create!(
+      extraction_status: "complete",
+      extracted_text: "Already extracted.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+
+    assert_no_enqueued_jobs(only: ExtractPackageTextJob) do
+      get package_url(@package)
+    end
+
     assert_response :success
   end
 

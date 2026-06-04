@@ -5,6 +5,8 @@ class DocFilesController < ApplicationController
     uploaded_files = Array(params[:files]).reject(&:blank?)
 
     if uploaded_files.any? && uploaded_files.all? { |uploaded_file| add_doc_file?(uploaded_file) }
+      ExtractPackageTextJob.perform_later(@package)
+
       redirect_to @package, notice: "Document added."
     else
       @package.errors.add(:base, "Choose at least 1 file") if uploaded_files.empty?

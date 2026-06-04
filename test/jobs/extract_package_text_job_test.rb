@@ -54,4 +54,18 @@ class ExtractPackageTextJobTest < ActiveJob::TestCase
     assert_equal "Second legal text.", @second_doc_file.reload.extracted_text
     assert_equal "complete", @second_doc_file.extraction_status
   end
+
+  test "skips files that already have extracted text" do
+    @first_doc_file.update!(
+      extraction_status: "complete",
+      extracted_text: "Already extracted.",
+      extracted_at: Time.current
+    )
+
+    ExtractPackageTextJob.perform_now(@package)
+
+    assert_equal "Already extracted.", @first_doc_file.reload.extracted_text
+    assert_equal "Second legal text.", @second_doc_file.reload.extracted_text
+    assert_equal "complete", @second_doc_file.extraction_status
+  end
 end
