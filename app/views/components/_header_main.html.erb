@@ -22,7 +22,7 @@
 <% primary_classes = "inline-flex items-center justify-center rounded-md bg-cyan-950 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-900" %>
 
 <%# ---- Back button ---- %>
-<header class="mb-8">
+<header class="header-section">
   <% if back_path.present? %>
     <div class="mb-3">
       <%= link_to back_path, class: "inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-slate-800" do %>
@@ -35,7 +35,7 @@
 <%# ---- Header & Subheader ---- %>
   <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
     <div class="min-w-0">
-      <h1 class="text-2xl font-bold tracking-tight text-cyan-950 sm:text-3xl">
+      <h1>
         <%= title %>
       </h1>
 
@@ -78,43 +78,3 @@
     <% end %>
   </div>
 </header>
-
-<%# >>> Header usage guide <<< %>
-
-<%# --- Render only a title: --- %>
-<%#   render "components/header_main", %>
-<%#     page_header: "Search Packages" %>
-
-<%# --- Render a title with helper text: --- %>
-
-<%#   render "components/header_main", %>
-<%#     page_header: "Create Package", %>
-<%#     page_subheader: "Upload the legal files you want to review." %>
-
-
-<%# --- Render with a back link: --- %>
-<%#   render "components/header_main", %>
-<%#     page_header: @package.name.presence || "Package", %>
-<%#     back_label: "Back to packages", %>
-<%#     back_path: packages_path %>
-
-
-<%# --- Render with optional action buttons: --- %>
-
-<%#   render "components/header_main", %>
-<%#     page_header: @package.name.presence || "Package", %>
-<%#     back_label: "Back to packages", %>
-<%#     back_path: packages_path, %>
-<%#     borderless_label: "Delete", %>
-<%#     borderless_path: package_path(@package), %>
-<%#     borderless_method: :delete, %>
-<%#     secondary_label: "Edit", %>
-<%#     secondary_path: edit_package_path(@package), %>
-<%#     primary_label: "New package", %>
-<%#     primary_path: new_package_path %>
-<%# %>
-
-<%# --- Notes: --- %>
-<%# - Leave out any label/path pair when you do not want that button to render. %>
-<%# - Methods default to :get, so only add *_method when you need :post, :patch, :put, or :delete. %>
-<%# - Available buttons are borderless, secondary, and primary. %>
