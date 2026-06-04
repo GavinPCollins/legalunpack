@@ -130,6 +130,40 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     assert package.doc_files.all? { |doc_file| doc_file.file.attached? }
   end
 
+  test "should create package with pasted text only" do
+    assert_enqueued_with(job: ExtractPackageTextJob) do
+      assert_difference("Package.count", 1) do
+        assert_difference("DocFile.count", 1) do
+          post packages_url, params: {
+            package: { name: "Pasted notice" },
+            pasted_text: "A pasted legal notice."
+          }
+        end
+      end
+    end
+
+    package = Package.order(:created_at).last
+    doc_file = package.doc_files.first
+
+    assert_redirected_to package_url(package)
+    assert_equal "pasted-text.txt", doc_file.file.filename.to_s
+    assert_equal "text/plain", doc_file.file.content_type
+    assert_equal "A pasted legal notice.", doc_file.file.download
+  end
+
+  test "should reject create with unsupported uploaded file type" do
+    uploaded_file = fixture_file_upload("sample.txt", "text/html")
+
+    assert_no_enqueued_jobs(only: ExtractPackageTextJob) do
+      assert_no_difference([ "Package.count", "DocFile.count" ]) do
+        post packages_url, params: { package: { name: "Bad upload" }, files: [ uploaded_file ] }
+      end
+    end
+
+    assert_response :unprocessable_entity
+    assert_includes response.body, "File must be a PDF, DOCX, TXT, or RTF file"
+  end
+
   test "should get edit" do
     get edit_package_url(@package)
     assert_response :success
