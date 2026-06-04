@@ -9,6 +9,12 @@ class PackagesController < ApplicationController
     @package = current_user.packages.includes(doc_files: { file_attachment: :blob }).find(params[:id])
   end
 
+  def analysis
+    @package = current_user.packages
+                           .includes(doc_files: [ :clauses, { file_attachment: :blob } ])
+                           .find(params[:id])
+  end
+
   def new
     @package = Package.new
   end
@@ -56,6 +62,14 @@ class PackagesController < ApplicationController
     @package.destroy
 
     redirect_to packages_path, notice: "Package deleted."
+  end
+
+  def analyze
+    @package = current_user.packages.find(params[:id])
+
+    AnalyzePackageFilesJob.perform_later(@package)
+
+    redirect_to @package, notice: "AI analysis started."
   end
 
   private

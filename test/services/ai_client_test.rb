@@ -2,7 +2,7 @@ require "test_helper"
 
 class AiClientTest < ActiveSupport::TestCase
   test "returns message content from the AI response" do
-    fake_client = FakeOpenAiClient.new("Hello from AI.")
+    fake_client = FakeGitHubModelsClient.new("Hello from AI.")
 
     response = AiClient.call("Reply with a greeting.", client: fake_client, model: "test-model")
 
@@ -12,7 +12,7 @@ class AiClientTest < ActiveSupport::TestCase
   end
 
   test "can request a json response" do
-    fake_client = FakeOpenAiClient.new('{ "status": "ok" }')
+    fake_client = FakeGitHubModelsClient.new('{ "status": "ok" }')
 
     response = AiClient.call("Return JSON.", client: fake_client, json_response: true)
 
@@ -22,18 +22,18 @@ class AiClientTest < ActiveSupport::TestCase
 
   test "requires input" do
     assert_raises ArgumentError do
-      AiClient.call("", client: FakeOpenAiClient.new("unused"))
+      AiClient.call("", client: FakeGitHubModelsClient.new("unused"))
     end
   end
 
-  class FakeOpenAiClient
+  class FakeGitHubModelsClient
     attr_reader :parameters
 
     def initialize(content)
       @content = content
     end
 
-    def chat(parameters:)
+    def call(parameters)
       @parameters = parameters
       {
         "choices" => [
@@ -43,7 +43,7 @@ class AiClientTest < ActiveSupport::TestCase
             }
           }
         ]
-      }
+      }.to_json
     end
   end
 end

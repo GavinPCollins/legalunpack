@@ -71,6 +71,7 @@ class AnalyzeDocFileWithAi
     <<~PROMPT
       Return only valid JSON in this shape:
       {
+        "summary": "A short plain-English summary of the whole file.",
         "clauses": [
           {
             "title": "string",

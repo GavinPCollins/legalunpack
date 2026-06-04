@@ -1,6 +1,11 @@
-# Low-level wrapper for sending text to OpenAI and returning the response text.
+require "json"
+require "net/http"
+require "uri"
+
+# Low-level wrapper for sending text to GitHub Models and returning the response text.
 class AiClient
-  DEFAULT_MODEL = "gpt-4o-mini"
+  DEFAULT_ENDPOINT = "https://models.github.ai/inference/chat/completions"
+  DEFAULT_MODEL = "openai/gpt-4.1"
 
   # Public entrypoint: AiClient.call("Your prompt text")
   def self.call(input, client: nil, model: nil, json_response: false)
@@ -17,9 +22,8 @@ class AiClient
     raise ArgumentError, "input must be present" if input.blank?
 
     # Send one user message to the chat model.
-    response = client.chat(
-      parameters: request_parameters(input)
-    )
+    response_body = @client ? @client.call(request_parameters(input)) : perform_request(input)
+    response = JSON.parse(response_body)
 
     # Extract only the assistant's message text from the API response.
     response.dig("choices", 0, "message", "content")
@@ -27,14 +31,31 @@ class AiClient
 
   private
 
-  # Build the real OpenAI client unless a fake client was supplied for tests.
-  def client
-    @client ||= OpenAI::Client.new(access_token: ENV.fetch("OPENAI_API_KEY"))
+  def perform_request(input)
+    uri = URI(ENV.fetch("GITHUB_MODELS_ENDPOINT", DEFAULT_ENDPOINT))
+    request = Net::HTTP::Post.new(uri)
+    request["Accept"] = "application/vnd.github+json"
+    request["Authorization"] = "Bearer #{github_token}"
+    request["Content-Type"] = "application/json"
+    request["X-GitHub-Api-Version"] = "2026-03-10"
+    request.body = request_parameters(input).to_json
+
+    response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == "https") do |http|
+      http.request(request)
+    end
+
+    raise "GitHub Models request failed: #{response.code} #{response.body}" unless response.is_a?(Net::HTTPSuccess)
+
+    response.body
   end
 
-  # Allow model override through an argument or OPENAI_MODEL.
+  # Allow model override through an argument or env var.
   def model
-    @model || ENV.fetch("OPENAI_MODEL", DEFAULT_MODEL)
+    @model || ENV["GITHUB_MODEL"].presence || ENV["OPENAI_MODEL"].presence || DEFAULT_MODEL
+  end
+
+  def github_token
+    ENV["GITHUB_MODELS_TOKEN"].presence || ENV.fetch("GITHUB_TOKEN")
   end
 
   def request_parameters(input)
