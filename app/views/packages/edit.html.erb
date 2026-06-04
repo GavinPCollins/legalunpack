@@ -1,4 +1,25 @@
-<div>
-  <h1 class="font-bold text-4xl">Packages#edit</h1>
-  <p>Find me in app/views/packages/edit.html.erb</p>
-</div>
+<%# CODEX package edit updates %>
+<section class="mx-auto w-full max-w-md">
+  <div class="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <h1 class="text-2xl font-semibold tracking-tight text-neutral-950">Edit Package Name</h1>
+    <p class="mt-2 text-sm text-neutral-500">You can also edit this directly from the package page.</p>
+
+    <%= form_with model: @package, class: "mt-6 space-y-5" do |form| %>
+      <div>
+        <%= form.label :name, "Package name", class: "block text-sm font-medium text-neutral-700" %>
+        <%= form.text_field :name,
+              autofocus: true,
+              class: "mt-2 block w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-950 outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-100" %>
+        <% @package.errors.full_messages_for(:name).each do |message| %>
+          <p class="mt-2 text-sm text-red-600"><%= message %></p>
+        <% end %>
+      </div>
+
+      <div class="flex items-center justify-between gap-3">
+        <%= link_to "Cancel", package_path(@package), class: "rounded-md px-3 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-100" %>
+        <%= link_to "Open package page", package_path(@package, edit: "name", anchor: "package-name"), class: "rounded-md px-3 py-2 text-sm font-semibold text-cyan-800 hover:bg-cyan-50" %>
+        <%= form.submit "Save name", class: "rounded-md bg-cyan-950 px-4 py-2 text-sm font-semibold text-neutral-50 hover:bg-cyan-900" %>
+      </div>
+    <% end %>
+  </div>
+</section>

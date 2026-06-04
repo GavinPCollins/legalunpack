@@ -141,8 +141,13 @@
 }
 
 .create-button {
-  background: #0f766e;
-  color: white;
+  /* CODEX auth color updates */
+  background: #083344;
+  color: #fafafa;
+}
+
+.create-button:hover {
+  background: #164e63;
 }
 
 .upload-error {
