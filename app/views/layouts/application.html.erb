@@ -61,7 +61,7 @@
             </svg>
           </button>
           <%= link_to root_path, aria: { label: "Legalunpack" }, class: "min-w-0 flex-1" do %>
-            <%= image_tag "Logo9.svg", alt: "Legalunpack", class: "h-9 w-auto max-w-full object-contain" %>
+            <%= image_tag "shapeC.svg", alt: "Legalunpack", class: "h-8 w-auto max-w-full object-contain" %>
           <% end %>
           <%= link_to edit_user_registration_path, aria: { label: "Profile" }, class: "flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-sm font-bold text-neutral-700 outline -outline-offset-1 outline-black/5" do %>
             <%= (current_user.try(:name).presence || current_user.username.presence || current_user.email).first.upcase %>
