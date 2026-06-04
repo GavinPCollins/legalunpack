@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_03_041339) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_04_160732) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -45,12 +45,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_03_041339) do
   create_table "clauses", force: :cascade do |t|
     t.text "content"
     t.datetime "created_at", null: false
+    t.bigint "doc_file_id"
     t.bigint "package_id", null: false
+    t.integer "position"
+    t.string "risk_level"
+    t.text "summary"
+    t.string "title"
     t.datetime "updated_at", null: false
+    t.index ["doc_file_id"], name: "index_clauses_on_doc_file_id"
     t.index ["package_id"], name: "index_clauses_on_package_id"
   end
 
   create_table "doc_files", force: :cascade do |t|
+    t.text "ai_error"
+    t.datetime "ai_processed_at"
+    t.string "ai_status", default: "pending", null: false
+    t.text "ai_summary"
     t.datetime "created_at", null: false
     t.datetime "extracted_at"
     t.text "extracted_text"
@@ -91,6 +101,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_03_041339) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "clauses", "doc_files"
   add_foreign_key "clauses", "packages"
   add_foreign_key "doc_files", "packages"
   add_foreign_key "packages", "users"
