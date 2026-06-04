@@ -10,12 +10,23 @@
 
 <%# - Borderless button - %>
 <% borderless_method = local_assigns[:borderless_method] || :get %>
+<% borderless_type = local_assigns[:borderless_type] || :link %>
+<% borderless_data = local_assigns[:borderless_data] || {} %>
 
 <%# - Secondery button - %>
 <% secondary_method = local_assigns[:secondary_method] || :get %>
+<% secondary_type = local_assigns[:secondary_type] || :link %>
+<% secondary_data = local_assigns[:secondary_data] || {} %>
 
 <%# - Primary button - %>
 <% primary_method = local_assigns[:primary_method] || :get %>
+
+<%# --> Codex edit for form button <--%>
+<%# - Primary button (form)- %>
+<% primary_type = local_assigns[:primary_type] || :link %>
+<%# --> Codex edit for form button <--%>
+<%# - Primary button (form)- %>
+<% primary_form_id = local_assigns[:primary_form_id] %>
 
 <% borderless_classes = "inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900" %>
 <% secondary_classes = "inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50" %>
@@ -49,8 +60,10 @@
 <%# ---- borderless button (should be used for 3rd, cancle, or back) ---- %>
     <% if local_assigns[:borderless_label].present? || local_assigns[:secondary_label].present? || local_assigns[:primary_label].present? %>
       <div class="flex shrink-0 flex-wrap items-center gap-3">
-        <% if local_assigns[:borderless_label].present? && local_assigns[:borderless_path].present? %>
-          <% if borderless_method == :get %>
+        <% if local_assigns[:borderless_label].present? && (local_assigns[:borderless_path].present? || borderless_type.to_s == "button") %>
+          <% if borderless_type.to_s == "button" %>
+            <%= button_tag borderless_label, type: "button", class: borderless_classes, data: borderless_data %>
+          <% elsif borderless_method == :get %>
             <%= link_to borderless_label, borderless_path, class: borderless_classes %>
           <% else %>
             <%= button_to borderless_label, borderless_path, method: borderless_method, class: "#{borderless_classes} border-0 bg-transparent", form_class: "inline-flex" %>
@@ -58,8 +71,10 @@
         <% end %>
 
 <%# ---- Secondery button ---- %>
-        <% if local_assigns[:secondary_label].present? && local_assigns[:secondary_path].present? %>
-          <% if secondary_method == :get %>
+        <% if local_assigns[:secondary_label].present? && (local_assigns[:secondary_path].present? || secondary_type.to_s == "button") %>
+          <% if secondary_type.to_s == "button" %>
+            <%= button_tag secondary_label, type: "button", class: secondary_classes, data: secondary_data %>
+          <% elsif secondary_method == :get %>
             <%= link_to secondary_label, secondary_path, class: secondary_classes %>
           <% else %>
             <%= button_to secondary_label, secondary_path, method: secondary_method, class: secondary_classes, form_class: "inline-flex" %>
@@ -67,8 +82,13 @@
         <% end %>
 
 <%# ---- Primary button ---- %>
-        <% if local_assigns[:primary_label].present? && local_assigns[:primary_path].present? %>
-          <% if primary_method == :get %>
+        <% if local_assigns[:primary_label].present? && (local_assigns[:primary_path].present? || primary_type.to_s == "submit") %>
+          <%# --> Codex edit for form button <--%>
+          <% if primary_type.to_s == "submit" %>
+            <% submit_options = { type: "submit", class: primary_classes } %>
+            <% submit_options[:form] = primary_form_id if primary_form_id.present? %>
+            <%= button_tag primary_label, submit_options %>
+          <% elsif primary_method == :get %>
             <%= link_to primary_label, primary_path, class: primary_classes %>
           <% else %>
             <%= button_to primary_label, primary_path, method: primary_method, class: primary_classes, form_class: "inline-flex" %>
