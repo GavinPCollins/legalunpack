@@ -1,0 +1,80 @@
+<%# ---- Header & Subheader ---- %>
+<% title = local_assigns.fetch(:page_header) %>
+<% subtitle = local_assigns[:page_subheader] %>
+
+<%# ---- Back button ---- %>
+<% back_label = local_assigns[:back_label] || "Back" %>
+<% back_path = local_assigns[:back_path] %>
+
+<%# ---- Button Set ---- %>
+
+<%# - Borderless button - %>
+<% borderless_method = local_assigns[:borderless_method] || :get %>
+
+<%# - Secondery button - %>
+<% secondary_method = local_assigns[:secondary_method] || :get %>
+
+<%# - Primary button - %>
+<% primary_method = local_assigns[:primary_method] || :get %>
+
+<% borderless_classes = "inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900" %>
+<% secondary_classes = "inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50" %>
+<% primary_classes = "inline-flex items-center justify-center rounded-md bg-cyan-950 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-900" %>
+
+<%# ---- Back button ---- %>
+<header class="header-section">
+  <% if back_path.present? %>
+    <div class="mb-3">
+      <%= link_to back_path, class: "inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-slate-800" do %>
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+        <%= back_label %>
+      <% end %>
+    </div>
+  <% end %>
+
+<%# ---- Header & Subheader ---- %>
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div class="min-w-0">
+      <h1>
+        <%= title %>
+      </h1>
+
+      <% if subtitle.present? %>
+        <p class="mt-2 max-w-2xl text-sm text-slate-600">
+          <%= subtitle %>
+        </p>
+      <% end %>
+    </div>
+
+<%# ---- borderless button (should be used for 3rd, cancle, or back) ---- %>
+    <% if local_assigns[:borderless_label].present? || local_assigns[:secondary_label].present? || local_assigns[:primary_label].present? %>
+      <div class="flex shrink-0 flex-wrap items-center gap-3">
+        <% if local_assigns[:borderless_label].present? && local_assigns[:borderless_path].present? %>
+          <% if borderless_method == :get %>
+            <%= link_to borderless_label, borderless_path, class: borderless_classes %>
+          <% else %>
+            <%= button_to borderless_label, borderless_path, method: borderless_method, class: "#{borderless_classes} border-0 bg-transparent", form_class: "inline-flex" %>
+          <% end %>
+        <% end %>
+
+<%# ---- Secondery button ---- %>
+        <% if local_assigns[:secondary_label].present? && local_assigns[:secondary_path].present? %>
+          <% if secondary_method == :get %>
+            <%= link_to secondary_label, secondary_path, class: secondary_classes %>
+          <% else %>
+            <%= button_to secondary_label, secondary_path, method: secondary_method, class: secondary_classes, form_class: "inline-flex" %>
+          <% end %>
+        <% end %>
+
+<%# ---- Primary button ---- %>
+        <% if local_assigns[:primary_label].present? && local_assigns[:primary_path].present? %>
+          <% if primary_method == :get %>
+            <%= link_to primary_label, primary_path, class: primary_classes %>
+          <% else %>
+            <%= button_to primary_label, primary_path, method: primary_method, class: primary_classes, form_class: "inline-flex" %>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</header>
