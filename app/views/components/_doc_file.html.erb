@@ -87,9 +87,14 @@
 
       <div class="min-w-0">
         <div class="flex min-w-0 flex-wrap items-start gap-x-3 gap-y-1">
-          <p class="truncate text-sm font-semibold leading-6 text-neutral-950">
-            <%= doc_file.file.attached? ? doc_file.file.filename.to_s : "Untitled file" %>
-          </p>
+          <%# ---- Filename link: opens the per-file AI summary page ---- %>
+          <% if doc_file.file.attached? %>
+            <%= link_to doc_file.file.filename.to_s,
+                  summary_doc_file_path(doc_file),
+                  class: "block truncate text-sm font-semibold leading-6 text-neutral-950 hover:text-emerald-800" %>
+          <% else %>
+            <p class="truncate text-sm font-semibold leading-6 text-neutral-950">Untitled file</p>
+          <% end %>
 
           <%# ---- Status badge: template pill, with our spinner/tick/cross/amber dash inside ---- %>
           <span class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset <%= status_badge_classes %>" title="<%= status_label %>">
