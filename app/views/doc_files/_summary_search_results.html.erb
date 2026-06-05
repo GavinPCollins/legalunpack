@@ -1,0 +1,45 @@
+<%# CODEX file summary %>
+<% frame_id = local_assigns[:frame_id] || "summary_search_results" %>
+
+<%= turbo_frame_tag frame_id do %>
+  <% if query.present? %>
+    <p class="search-drawer-query">Results for "<%= query %>"</p>
+  <% end %>
+
+  <% if doc_files.any? %>
+    <ul class="mt-4 divide-y divide-neutral-200 rounded-md border border-neutral-200 bg-white">
+      <% doc_files.each do |doc_file| %>
+        <li>
+          <%= link_to summary_doc_file_path(doc_file, highlight: query), class: "block px-4 py-4 transition hover:bg-cyan-50", data: { turbo_frame: "_top" } do %>
+            <div class="flex items-start justify-between gap-4">
+              <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-neutral-950">
+                  <%= doc_file.file.attached? ? doc_file.file.filename.to_s : "Untitled file" %>
+                </p>
+                <p class="mt-1 truncate text-xs font-medium text-cyan-900">
+                  <%= doc_file.package.name.presence || "Untitled package" %>
+                </p>
+                <p class="mt-2 text-sm text-neutral-600">
+                  <% summary_text = doc_file.ai_summary.presence || "No AI summary saved yet." %>
+                  <% if query.present? %>
+                    <%= highlight(summary_text, query, highlighter: '<mark class="rounded bg-cyan-50 px-0.5 font-semibold text-cyan-950">\1</mark>') %>
+                  <% else %>
+                    <%= summary_text %>
+                  <% end %>
+                </p>
+              </div>
+              <span class="shrink-0 text-sm font-semibold text-cyan-800">Open</span>
+            </div>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% elsif query.present? %>
+    <div class="mt-4 rounded-md border border-dashed border-neutral-300 px-4 py-10 text-center">
+      <p class="text-sm font-medium text-neutral-950">No matching summaries</p>
+      <p class="mt-1 text-sm text-neutral-500">Try another word or phrase from an AI summary.</p>
+    </div>
+  <% else %>
+    <p class="search-drawer-empty">Press Return to search AI summaries.</p>
+  <% end %>
+<% end %>
