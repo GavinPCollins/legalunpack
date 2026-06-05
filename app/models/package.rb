@@ -11,10 +11,11 @@ class Package < ApplicationRecord
   has_many :file_blobs, through: :doc_files, source: :file_blob
 
   # CODEX search function updates
-  pg_search_scope :search_by_name_and_filename,
+  pg_search_scope :search_by_name_filename_and_summary,
                   against: :name,
                   associated_against: {
-                    file_blobs: :filename
+                    file_blobs: :filename,
+                    doc_files: :ai_summary
                   },
                   using: {
                     tsearch: { prefix: true }

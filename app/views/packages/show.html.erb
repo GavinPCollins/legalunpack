@@ -2,6 +2,13 @@
   <%= render "components/header_item",
         item_title: @package.name.presence || "Untitled package",
         item_subheader: "Created #{ @package.created_at.to_fs(:long)}",
+        search_path: summary_search_doc_files_path,
+        search_name: :q,
+        search_params: { package_id: @package.id },
+        search_placeholder: "Search AI summaries",
+        search_drawer_title: "Summary search",
+        search_drawer_body: "Press Return to search this package's AI summaries.",
+        search_frame_id: "summary_search_results",
         overflow_actions: [
           { label: "Rename package", type: :button, data: { action: "modal#open", modal_dialog_param: "rename" } },
           { label: "Add documents", type: :button, data: { action: "modal#open", modal_dialog_param: "documents" } },

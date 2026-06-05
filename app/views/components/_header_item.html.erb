@@ -17,6 +17,9 @@
 <% search_value = local_assigns[:search_value] %>
 <% search_placeholder = local_assigns[:search_placeholder] || "Search" %>
 <% search_label = local_assigns[:search_label] || search_placeholder %>
+<% search_params = local_assigns[:search_params] || {} %>
+<% search_frame_id = local_assigns[:search_frame_id] %>
+<% search_frame_content = local_assigns[:search_frame_content] %>
 <% search_drawer_title = local_assigns[:search_drawer_title] || "Search" %>
 <% search_drawer_body = local_assigns[:search_drawer_body] || "Search results will appear here." %>
 <% show_search_drawer = local_assigns.fetch(:show_search_drawer, true) %>
@@ -66,7 +69,11 @@
     <%= form_with url: search_path,
           method: search_method,
           class: "item-search",
-          data: (show_search_drawer ? { action: "submit->search-drawer#open" } : {}) do %>
+          data: (show_search_drawer ? { action: "submit->search-drawer#open", turbo_frame: search_frame_id }.compact : {}) do %>
+      <% search_params.each do |name, value| %>
+        <%= hidden_field_tag name, value %>
+      <% end %>
+
       <%= search_field_tag search_name,
             search_value,
             placeholder: search_placeholder,
@@ -162,7 +169,17 @@
             </div>
             <div class="search-drawer-body">
               <p class="search-drawer-query" data-search-drawer-target="queryText"></p>
-              <p class="search-drawer-empty"><%= search_drawer_body %></p>
+              <% if search_frame_id.present? %>
+                <%= turbo_frame_tag search_frame_id do %>
+                  <% if search_frame_content.present? %>
+                    <%= search_frame_content %>
+                  <% else %>
+                    <p class="search-drawer-empty"><%= search_drawer_body %></p>
+                  <% end %>
+                <% end %>
+              <% else %>
+                <p class="search-drawer-empty"><%= search_drawer_body %></p>
+              <% end %>
             </div>
           </div>
         </div>

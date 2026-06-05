@@ -1,4 +1,9 @@
+require "pg_search/model"
+
 class DocFile < ApplicationRecord
+  # CODEX file summary updates
+  include PgSearch::Model
+
   MAX_FILE_SIZE = 25.megabytes
   ALLOWED_CONTENT_TYPES = [
     "application/pdf",
@@ -15,6 +20,13 @@ class DocFile < ApplicationRecord
   belongs_to :package
   has_many :clauses, dependent: :nullify
   has_one_attached :file
+
+  # CODEX file summary updates
+  pg_search_scope :search_by_ai_summary,
+                  against: :ai_summary,
+                  using: {
+                    tsearch: { prefix: true }
+                  }
 
   # AI-READY FILES
   scope :ready_for_ai, -> { where(extraction_status: "complete").where.not(extracted_text: [nil, ""]) }

@@ -14,7 +14,7 @@ class DocFilesController < ApplicationController
     end
   end
 
-  # summary page update
+  # CODEX file summary updates
   def summary
     @doc_file = DocFile
                 .joins(:package)
@@ -22,6 +22,16 @@ class DocFilesController < ApplicationController
                 .includes(:clauses, file_attachment: :blob, package: {})
                 .find(params[:id])
     @package = @doc_file.package
+    @highlight_query = params[:highlight].to_s.strip
+  end
+
+  # CODEX file summary updates
+  def summary_search
+    @query = params[:q].to_s.strip
+    @doc_files = summary_search_results
+
+    render partial: "doc_files/summary_search_results",
+           locals: { doc_files: @doc_files, query: @query }
   end
 
   def destroy
@@ -33,6 +43,19 @@ class DocFilesController < ApplicationController
   end
 
   private
+
+  def summary_search_results
+    return DocFile.none if @query.blank?
+
+    doc_files = DocFile
+                .joins(:package)
+                .where(packages: { user_id: current_user.id })
+                .includes(:package, file_attachment: :blob)
+
+    doc_files = doc_files.where(package_id: params[:package_id]) if params[:package_id].present?
+
+    doc_files.search_by_ai_summary(@query).order(updated_at: :desc)
+  end
 
   def add_doc_file?(uploaded_file)
     @package.doc_files.create(file: uploaded_file).tap do |doc_file|

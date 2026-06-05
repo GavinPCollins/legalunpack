@@ -45,34 +45,84 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
- # doc_file summary page
+  # CODEX file summary updates
   test "should get summary for current user doc file" do
-      doc_file = @package.doc_files.create!(
-        extraction_status: "complete",
-        extracted_text: "Payment is due within 14 days.",
-        ai_status: "complete",
-        ai_summary: "This file sets payment obligations.",
-        file: fixture_file_upload("sample.txt", "text/plain")
-      )
+    doc_file = @package.doc_files.create!(
+      extraction_status: "complete",
+      extracted_text: "Payment is due within 14 days.",
+      ai_status: "complete",
+      ai_summary: "This file sets payment obligations.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
 
-      get summary_doc_file_url(doc_file)
+    get summary_doc_file_url(doc_file)
 
-      assert_response :success
-      assert_includes response.body, "AI Summary for"
-      assert_includes response.body, "sample.txt"
-      assert_includes response.body, "Lease review"
-      assert_includes response.body, "This file sets payment obligations."
+    assert_response :success
+    assert_includes response.body, "AI Summary for"
+    assert_includes response.body, "sample.txt"
+    assert_includes response.body, "Lease review"
+    assert_includes response.body, "This file sets payment obligations."
+  end
+
+  test "should highlight requested summary text" do
+    doc_file = @package.doc_files.create!(
+      ai_summary: "This file sets payment obligations.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+
+    get summary_doc_file_url(doc_file), params: { highlight: "payment" }
+
+    assert_response :success
+    assert_select "mark[data-summary-highlight-target='match']", text: /payment/i
+  end
+
+  test "should not get summary for another user's doc file" do
+    other_user = User.create!(email: "summary-other@example.com", password: "password", username: "summaryother")
+    other_package = other_user.packages.create!(name: "Private package")
+    other_doc_file = other_package.doc_files.create!(
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+
+    get summary_doc_file_url(other_doc_file)
+
+    assert_response :not_found
+  end
+
+  test "should search current user ai summaries" do
+    doc_file = @package.doc_files.create!(
+      ai_summary: "This file sets payment obligations.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+
+    get summary_search_doc_files_url, params: { q: "payment" }
+
+    assert_response :success
+    assert_select "turbo-frame#summary_search_results" do
+      assert_select "a[href='#{summary_doc_file_path(doc_file, highlight: "payment")}']"
+      assert_select "p", text: "sample.txt"
+      assert_select "p", text: "Lease review"
+      assert_select "mark", text: /payment/i
     end
+  end
 
-    test "should not get summary for another user's doc file" do
-      other_user = User.create!(email: "summary-other@example.com", password: "password", username: "summaryother")
-      other_package = other_user.packages.create!(name: "Private package")
-      other_doc_file = other_package.doc_files.create!(
-        file: fixture_file_upload("sample.txt", "text/plain")
-      )
+  test "should not search another user's ai summaries" do
+    other_user = User.create!(
+      email: "summary-search-other@example.com",
+      password: "password",
+      username: "summarysearchother"
+    )
+    other_package = other_user.packages.create!(name: "Private package")
+    other_package.doc_files.create!(
+      ai_summary: "This file sets payment obligations.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
 
-      get summary_doc_file_url(other_doc_file)
+    get summary_search_doc_files_url, params: { q: "payment" }
 
-      assert_response :not_found
+    assert_response :success
+    assert_select "turbo-frame#summary_search_results" do
+      assert_select "p", text: "No matching summaries"
+      assert_select "p", text: "Private package", count: 0
     end
+  end
 end
