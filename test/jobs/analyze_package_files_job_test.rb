@@ -22,7 +22,40 @@ class AnalyzePackageFilesJobTest < ActiveJob::TestCase
     )
   end
 
-  test "analyzes only files ready for ai" do
+  test "extracts and analyzes every unanalyzed file in one run" do
+    analyzed_ids = []
+    extracted_ids = []
+
+    stub_extractor(lambda do |doc_file|
+      extracted_ids << doc_file.id
+      doc_file.update!(
+        extracted_text: "Extracted text for #{doc_file.file.filename}",
+        extraction_status: "complete"
+      )
+    end) do
+      stub_analyzer(lambda do |doc_file|
+        analyzed_ids << doc_file.id
+      end) do
+        AnalyzePackageFilesJob.perform_now(@package)
+      end
+    end
+
+    assert_equal [ @pending_doc_file.id, @blank_doc_file.id ], extracted_ids
+    assert_equal [ @ready_doc_file.id, @pending_doc_file.id, @blank_doc_file.id ], analyzed_ids
+  end
+
+  test "analyzes every ready unanalyzed file in one run" do
+    second_ready_doc_file = create_doc_file(
+      filename: "second-ready.txt",
+      extracted_text: "Second ready legal text.",
+      extraction_status: "complete"
+    )
+    analyzed_doc_file = create_doc_file(
+      filename: "already-analyzed.txt",
+      extracted_text: "Already analyzed legal text.",
+      extraction_status: "complete",
+      ai_status: "complete"
+    )
     analyzed_ids = []
 
     stub_analyzer(lambda do |doc_file|
@@ -31,8 +64,8 @@ class AnalyzePackageFilesJobTest < ActiveJob::TestCase
       AnalyzePackageFilesJob.perform_now(@package)
     end
 
-
-    assert_equal [ @ready_doc_file.id ], analyzed_ids
+    assert_equal [ @ready_doc_file.id, @pending_doc_file.id, @blank_doc_file.id, second_ready_doc_file.id ], analyzed_ids
+    assert_not_includes analyzed_ids, analyzed_doc_file.id
   end
 
   test "does not analyze files with complete ai analysis" do
@@ -50,7 +83,7 @@ class AnalyzePackageFilesJobTest < ActiveJob::TestCase
       AnalyzePackageFilesJob.perform_now(@package)
     end
 
-    assert_equal [ @ready_doc_file.id ], analyzed_ids
+    assert_equal [ @ready_doc_file.id, @pending_doc_file.id, @blank_doc_file.id ], analyzed_ids
     assert_not_includes analyzed_ids, analyzed_doc_file.id
   end
 
@@ -70,7 +103,7 @@ class AnalyzePackageFilesJobTest < ActiveJob::TestCase
     end
 
 
-    assert_equal [ @ready_doc_file.id, second_ready_doc_file.id ], analyzed_ids
+    assert_equal [ @ready_doc_file.id, @pending_doc_file.id, @blank_doc_file.id, second_ready_doc_file.id ], analyzed_ids
   end
 
   private
@@ -97,5 +130,16 @@ class AnalyzePackageFilesJobTest < ActiveJob::TestCase
     yield
   ensure
     AnalyzeDocFileWithAi.define_singleton_method(:save!, original_save) if original_save
+  end
+
+  def stub_extractor(handler)
+    original_save = ExtractFileText.method(:save!)
+    ExtractFileText.define_singleton_method(:save!) do |doc_file|
+      handler.call(doc_file)
+    end
+
+    yield
+  ensure
+    ExtractFileText.define_singleton_method(:save!, original_save) if original_save
   end
 end
