@@ -3,15 +3,14 @@
 /* >>> App shell <<< */
 /* Desktop layout:
    - sidebar is fixed from lg upward.
-   - main content uses left padding wider than the sidebar so it never sits underneath it. */
+   - app shell starts after the sidebar and fills the remaining width. */
 .side-nav-desktop {
   @apply hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col;
 }
 
-.app-main {
-  @apply min-w-0 px-6 py-8 lg:pl-80 lg:pr-10;
+.app-shell {
+  @apply min-w-0 w-full lg:ml-72 lg:w-[calc(100%-18rem)];
 }
-
 /* Mobile layout:
    - top bar is visible below lg and owns the drawer trigger.
    - drawer/backdrop are mounted in the layout and toggled by sidebar_controller.js. */
@@ -41,7 +40,7 @@
 
 /* Page Layout */
 .page-main {
-  @apply mx-auto w-full max-w-[600px];
+  @apply mx-auto w-full max-w-[600px] px-6 py-8;
 }
 
 .page-item {

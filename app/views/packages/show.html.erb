@@ -1,4 +1,5 @@
 <div class="page-item" data-controller="modal">
+  <%= render "components/header_item" %>
   <%= render "components/header_main",
         page_header: "#{@package.name.presence || "Untitled package"}",
         page_subheader: "Created #{ @package.created_at.to_fs(:long)}",
