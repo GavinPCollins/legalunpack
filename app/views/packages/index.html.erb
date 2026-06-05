@@ -1,37 +1,17 @@
 <%# CODEX search function updates %>
-<div class="page-main">
-<%= render "components/header_main",
-      page_header: "Search Packages",
-      page_subheader: "Find packages by package name or uploaded file name." %>
-<section class="content">
-  <div class="">
-    <%# <div class="text-left"> %>
-      <%# <h1 class="text-2xl font-semibold tracking-tight">Search Packages</h1> %>
-      <%# <p class="mt-2 text-sm text-slate-600">Find packages by package name or uploaded file name.</p> %>
-    <%# </div> %>
+<% package_search_results = @query.present? ? render("doc_files/summary_search_results", doc_files: @doc_files, query: @query, frame_id: "package_search_results") : nil %>
 
-    <%= form_with url: packages_path,
-          method: :get,
-          data: { controller: "search", turbo_frame: "package_search_results" },
-          class: "mt-6" do |form| %>
-      <label for="package_search" class="sr-only">Search packages</label>
-      <div class="relative">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-slate-400">
-          <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m1.35-5.4a6.75 6.75 0 1 1-13.5 0 6.75 6.75 0 0 1 13.5 0Z" />
-        </svg>
-        <%= form.search_field :q,
-              id: "package_search",
-              value: @query,
-              placeholder: "Search package or file names",
-              autocomplete: "off",
-              data: { action: "input->search#submit" },
-              class: "block w-full rounded-md border border-slate-300 bg-white py-3 pl-10 pr-3 text-base text-slate-950 outline-none transition focus:border-sky-600 focus:ring-2 focus:ring-sky-100" %>
-      </div>
-    <% end %>
-
-    <%= turbo_frame_tag "package_search_results" do %>
-      <%= render "packages/search_results", packages: @packages, query: @query if @query.present? %>
-    <% end %>
-  </div>
-</section>
+<div class="page-item">
+  <%= render "components/header_item",
+        item_title: "Search Packages",
+        item_subheader: "Search AI summaries across all packages.",
+        search_path: packages_path,
+        search_name: :q,
+        search_value: @query,
+        search_placeholder: "Search all AI summaries",
+        search_drawer_title: "Package search",
+        search_drawer_body: "Press Return to search AI summaries across all packages.",
+        search_frame_id: "package_search_results",
+        search_frame_content: package_search_results,
+        show_ai_chat: false %>
 </div>

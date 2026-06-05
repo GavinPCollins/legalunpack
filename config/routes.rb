@@ -18,6 +18,7 @@ Rails.application.routes.draw do
   # CODEX add document updates
   resources :doc_files, only: [:show, :create, :destroy] do
     get :summary, on: :member
+    get :summary_search, on: :collection
   end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

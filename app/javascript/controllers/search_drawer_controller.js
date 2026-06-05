@@ -4,13 +4,13 @@ export default class extends Controller {
   static targets = ["dialog", "query", "queryText"]
 
   open(event) {
-    event.preventDefault()
-
     if (this.hasQueryTextTarget) {
       this.queryTextTarget.textContent = this.queryTarget.value.trim()
     }
 
-    this.dialogTarget.showModal()
+    if (!this.dialogTarget.open) {
+      this.dialogTarget.showModal()
+    }
   }
 
   close() {
