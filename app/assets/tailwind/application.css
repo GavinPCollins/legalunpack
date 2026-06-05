@@ -1,3 +1,5 @@
 @import "tailwindcss";
 @import "./components/file_upload_form.css";
 @import "./components/page_layout.css";
+@import "./components/headers_style.css";
+@import "./components/badges.css";
