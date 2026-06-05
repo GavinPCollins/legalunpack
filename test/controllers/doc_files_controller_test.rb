@@ -90,4 +90,35 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :not_found
   end
+
+ # doc_file summary page
+  test "should get summary for current user doc file" do
+      doc_file = @package.doc_files.create!(
+        extraction_status: "complete",
+        extracted_text: "Payment is due within 14 days.",
+        ai_status: "complete",
+        ai_summary: "This file sets payment obligations.",
+        file: fixture_file_upload("sample.txt", "text/plain")
+      )
+
+      get summary_doc_file_url(doc_file)
+
+      assert_response :success
+      assert_includes response.body, "AI Summary for"
+      assert_includes response.body, "sample.txt"
+      assert_includes response.body, "Lease review"
+      assert_includes response.body, "This file sets payment obligations."
+    end
+
+    test "should not get summary for another user's doc file" do
+      other_user = User.create!(email: "summary-other@example.com", password: "password", username: "summaryother")
+      other_package = other_user.packages.create!(name: "Private package")
+      other_doc_file = other_package.doc_files.create!(
+        file: fixture_file_upload("sample.txt", "text/plain")
+      )
+
+      get summary_doc_file_url(other_doc_file)
+
+      assert_response :not_found
+    end
 end

@@ -1,18 +1,25 @@
 <div class="page-item" data-controller="modal">
-  <%= render "components/header_main",
+  <%= render "components/header_item",
+        item_title: @package.name.presence || "Untitled package",
+        item_subheader: "Created #{ @package.created_at.to_fs(:long)}",
+        overflow_actions: [
+          { label: "Rename package", type: :button, data: { action: "modal#open", modal_dialog_param: "rename" } },
+          { label: "Add documents", type: :button, data: { action: "modal#open", modal_dialog_param: "documents" } },
+          {
+            label: "Delete package",
+            path: package_path(@package),
+            method: :delete,
+            danger: true,
+            form: { data: { turbo_confirm: "Delete #{@package.name.presence || "this package"}?" } }
+          }
+        ] %>
+  <%#= render "components/header_main",
         page_header: "#{@package.name.presence || "Untitled package"}",
-        page_subheader: "Created #{ @package.created_at.to_fs(:long)}",
-        borderless_label: "Delete",
-        borderless_path: package_path(@package),
-        borderless_method: :delete,
-        borderless_form: { data: { turbo_confirm: "Delete #{@package.name.presence || "this package"}?" } },
-        secondary_label: "Rename",
-        secondary_type: :button,
-        secondary_data: { action: "modal#open" } %>
+        page_subheader: "Created #{ @package.created_at.to_fs(:long)}" %>
 
   <%# ---- Rename modal dialog ---- %>
-  <div class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="rename-package-title" data-modal-target="dialog">
-    <div class="fixed inset-0 bg-neutral-950/40" aria-hidden="true" data-action="click->modal#close"></div>
+  <div class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="rename-package-title" data-modal-target="dialog" data-modal-name="rename">
+    <div class="fixed inset-0 bg-neutral-950/40" aria-hidden="true" data-action="click->modal#close" data-modal-dialog-param="rename"></div>
 
     <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
       <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
@@ -23,7 +30,7 @@
               <p class="mt-1 text-sm text-neutral-500">Update the package name shown throughout Legalunpack.</p>
             </div>
 
-            <button type="button" class="rounded-md px-2 py-1 text-sm font-semibold text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950" data-action="modal#close">
+            <button type="button" class="rounded-md px-2 py-1 text-sm font-semibold text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950" data-action="modal#close" data-modal-dialog-param="rename">
               Close
             </button>
           </div>
@@ -40,7 +47,7 @@
             </div>
 
             <div class="flex items-center justify-end gap-3">
-              <button type="button" class="rounded-md px-3 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-100" data-action="modal#close">
+              <button type="button" class="rounded-md px-3 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-100" data-action="modal#close" data-modal-dialog-param="rename">
                 Cancel
               </button>
               <%= form.submit "Save name", class: "rounded-md bg-cyan-950 px-4 py-2 text-sm font-semibold text-neutral-50 hover:bg-cyan-900" %>
@@ -51,6 +58,48 @@
     </div>
   </div>
   <%# ---- End rename modal dialog ---- %>
+
+  <%# ---- Add documents modal dialog ---- %>
+  <div class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="add-documents-title" data-modal-target="dialog" data-modal-name="documents">
+    <div class="fixed inset-0 bg-neutral-950/40" aria-hidden="true" data-action="click->modal#close" data-modal-dialog-param="documents"></div>
+
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+      <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+        <div class="relative w-full max-w-lg rounded-lg bg-white p-6 text-left shadow-xl">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h2 id="add-documents-title" class="text-lg font-semibold text-neutral-950">Add documents</h2>
+              <p class="mt-1 text-sm text-neutral-500">Upload legal files to this package.</p>
+            </div>
+
+            <button type="button" class="rounded-md px-2 py-1 text-sm font-semibold text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950" data-action="modal#close" data-modal-dialog-param="documents">
+              Close
+            </button>
+          </div>
+
+          <%= form_with url: doc_files_path, multipart: true, data: { controller: "file-upload" }, class: "mt-6 space-y-4" do %>
+            <%= hidden_field_tag :package_id, @package.id %>
+            <div class="rounded-md border-2 border-dashed border-neutral-300 bg-neutral-50 p-6 text-center" data-file-upload-target="dropzone" data-action="dragover->file-upload#dragover drop->file-upload#drop">
+              <p class="text-sm font-medium text-neutral-950">Drop files here</p>
+              <p class="mt-1 text-xs text-neutral-500">PDF, DOCX, TXT, RTF</p>
+              <%= label_tag :package_document_files, "Select files", class: "mt-4 inline-flex cursor-pointer rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50" %>
+              <%= file_field_tag "files[]",
+                    id: "package_document_files",
+                    multiple: true,
+                    accept: ".pdf,.docx,.txt,.rtf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/rtf,application/x-rtf,text/rtf,text/plain",
+                    class: "sr-only",
+                    data: { file_upload_target: "input", action: "change->file-upload#select" } %>
+            </div>
+            <ul class="space-y-2 text-left text-sm text-neutral-700" data-file-upload-target="list" aria-live="polite"></ul>
+            <div class="flex justify-end">
+              <%= submit_tag "Upload", class: "rounded-md bg-cyan-950 px-4 py-2 text-sm font-semibold text-neutral-50 hover:bg-cyan-900" %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+  <%# ---- End add documents modal dialog ---- %>
 
   <%# ---- Page content starts ---- %>
   <section class="content gap-6">
@@ -65,33 +114,6 @@
       <div class="flex shrink-0 flex-wrap items-center gap-2">
         <%= link_to "View analysis", analysis_package_path(@package), class: "rounded-md px-4 py-2 text-sm font-semibold text-cyan-800 hover:bg-cyan-50 hover:text-cyan-950" %>
         <%= button_to "Analyze package", analyze_package_path(@package), method: :post, class: "rounded-md border border-cyan-800 px-4 py-2 text-sm font-semibold text-cyan-800 hover:bg-cyan-50 hover:text-cyan-950" %>
-
-        <%# CODEX add document updates %>
-        <details class="relative shrink-0">
-          <summary role="button" class="cursor-pointer list-none rounded-md bg-cyan-950 px-4 py-2 text-sm font-semibold text-neutral-50 hover:bg-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 [&::-webkit-details-marker]:hidden">
-            Add document
-          </summary>
-          <div class="absolute right-0 z-20 mt-2 w-80 rounded-md border border-neutral-200 bg-white p-4 shadow-sm lg:w-96">
-            <%= form_with url: doc_files_path, multipart: true, data: { controller: "file-upload" }, class: "space-y-4" do %>
-              <%= hidden_field_tag :package_id, @package.id %>
-              <div class="rounded-md border-2 border-dashed border-neutral-300 bg-neutral-50 p-6 text-center" data-file-upload-target="dropzone" data-action="dragover->file-upload#dragover drop->file-upload#drop">
-                <p class="text-sm font-medium text-neutral-950">Drop files here</p>
-                <p class="mt-1 text-xs text-neutral-500">PDF, DOCX, TXT, RTF</p>
-                <%= label_tag :package_document_files, "Select files", class: "mt-4 inline-flex cursor-pointer rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50" %>
-                <%= file_field_tag "files[]",
-                      id: "package_document_files",
-                      multiple: true,
-                      accept: ".pdf,.docx,.txt,.rtf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/rtf,application/x-rtf,text/rtf,text/plain",
-                      class: "sr-only",
-                      data: { file_upload_target: "input", action: "change->file-upload#select" } %>
-              </div>
-              <ul class="space-y-2 text-left text-sm text-neutral-700" data-file-upload-target="list" aria-live="polite"></ul>
-              <div class="flex justify-end">
-                <%= submit_tag "Upload", class: "rounded-md bg-cyan-950 px-4 py-2 text-sm font-semibold text-neutral-50 hover:bg-cyan-900" %>
-              </div>
-            <% end %>
-          </div>
-        </details>
       </div>
     </div>
 
@@ -108,7 +130,7 @@
     <% else %>
       <div class="rounded-md border border-dashed border-neutral-300 px-4 py-10 text-center">
         <p class="text-sm font-medium text-neutral-950">No files uploaded yet</p>
-        <p class="mt-1 text-sm text-neutral-500">Use Add document to upload legal files to this package.</p>
+        <p class="mt-1 text-sm text-neutral-500">Use Add documents in the menu to upload legal files to this package.</p>
       </div>
     <% end %>
   </section>

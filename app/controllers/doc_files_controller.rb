@@ -20,6 +20,16 @@ class DocFilesController < ApplicationController
     end
   end
 
+  # summary page update
+  def summary
+    @doc_file = DocFile
+                .joins(:package)
+                .where(packages: { user_id: current_user.id })
+                .includes(:clauses, file_attachment: :blob, package: {})
+                .find(params[:id])
+    @package = @doc_file.package
+  end
+
   def destroy
     doc_file = current_user_doc_files.find(params[:id])
     package = doc_file.package
