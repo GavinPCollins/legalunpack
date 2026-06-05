@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_04_160732) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_05_000100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -58,6 +58,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_04_160732) do
 
   create_table "doc_files", force: :cascade do |t|
     t.text "ai_error"
+    t.string "ai_micro_summary"
     t.datetime "ai_processed_at"
     t.string "ai_status", default: "pending", null: false
     t.text "ai_summary"

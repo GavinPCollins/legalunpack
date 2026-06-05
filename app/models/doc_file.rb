@@ -17,7 +17,11 @@ class DocFile < ApplicationRecord
   has_one_attached :file
 
   # AI-READY FILES
-  scope :ready_for_ai, -> { where(extraction_status: "complete").where.not(extracted_text: [nil, ""]) }
+  scope :ready_for_ai, -> {
+    where(extraction_status: "complete")
+      .where.not(extracted_text: [ nil, "" ])
+      .where.not(ai_status: "complete")
+  }
   scope :needs_text_extraction, -> {
     where(extraction_status: [ nil, "pending" ])
       .or(where(extraction_status: "complete", extracted_text: [ nil, "" ]))

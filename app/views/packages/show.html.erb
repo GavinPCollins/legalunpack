@@ -100,33 +100,9 @@
     <% end %>
 
     <% if @package.doc_files.any? %>
-      <ul class="divide-y divide-neutral-200 rounded-md border border-neutral-200">
+      <ul role="list" class="divide-y divide-neutral-200 rounded-md border border-neutral-200">
         <% @package.doc_files.each do |doc_file| %>
-          <li class="flex items-center justify-between gap-4 px-4 py-3">
-            <div class="flex min-w-0 items-center gap-3">
-              <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-cyan-50 text-cyan-800">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-5.1a2.25 2.25 0 0 0-.659-1.591l-3.9-3.9A2.25 2.25 0 0 0 13.35 3H6.75A2.25 2.25 0 0 0 4.5 5.25v13.5A2.25 2.25 0 0 0 6.75 21h10.5a2.25 2.25 0 0 0 2.25-2.25v-4.5Z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 3.375V7.5A1.5 1.5 0 0 0 15 9h4.125" />
-                </svg>
-              </span>
-              <div class="min-w-0">
-                <% if doc_file.file.attached? %>
-                  <p class="truncate text-sm font-medium text-neutral-950"><%= doc_file.file.filename.to_s %></p>
-                  <p class="mt-0.5 text-xs text-neutral-500"><%= number_to_human_size(doc_file.file.byte_size) %></p>
-                <% else %>
-                  <p class="text-sm font-medium text-neutral-950">Untitled file</p>
-                <% end %>
-              </div>
-            </div>
-
-            <div class="flex shrink-0 items-center gap-1">
-              <% if doc_file.file.attached? %>
-                <%= link_to "Download", rails_blob_path(doc_file.file, disposition: "attachment"), class: "rounded-md px-3 py-2 text-sm font-semibold text-cyan-800 hover:bg-cyan-50 hover:text-cyan-950" %>
-              <% end %>
-              <%= button_to "Remove", doc_file_path(doc_file), method: :delete, class: "rounded-md px-3 py-2 text-sm font-semibold text-cyan-800 hover:bg-red-50" %>
-            </div>
-          </li>
+          <%= render "components/doc_file", doc_file: doc_file %>
         <% end %>
       </ul>
     <% else %>

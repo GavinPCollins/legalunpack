@@ -35,6 +35,25 @@ class AnalyzePackageFilesJobTest < ActiveJob::TestCase
     assert_equal [ @ready_doc_file.id ], analyzed_ids
   end
 
+  test "does not analyze files with complete ai analysis" do
+    analyzed_doc_file = create_doc_file(
+      filename: "already-analyzed.txt",
+      extracted_text: "Already analyzed legal text.",
+      extraction_status: "complete",
+      ai_status: "complete"
+    )
+    analyzed_ids = []
+
+    stub_analyzer(lambda do |doc_file|
+      analyzed_ids << doc_file.id
+    end) do
+      AnalyzePackageFilesJob.perform_now(@package)
+    end
+
+    assert_equal [ @ready_doc_file.id ], analyzed_ids
+    assert_not_includes analyzed_ids, analyzed_doc_file.id
+  end
+
   test "continues analyzing remaining files when one file fails" do
     second_ready_doc_file = create_doc_file(
       filename: "second-ready.txt",
@@ -56,10 +75,11 @@ class AnalyzePackageFilesJobTest < ActiveJob::TestCase
 
   private
 
-  def create_doc_file(filename:, extracted_text:, extraction_status:)
+  def create_doc_file(filename:, extracted_text:, extraction_status:, ai_status: "pending")
     @package.doc_files.create!(
       extracted_text: extracted_text,
       extraction_status: extraction_status,
+      ai_status: ai_status,
       file: {
         io: StringIO.new(filename),
         filename: filename,

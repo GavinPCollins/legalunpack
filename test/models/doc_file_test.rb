@@ -76,6 +76,13 @@ class DocFileTest < ActiveSupport::TestCase
     assert_equal [ ready_doc_file ], @package.doc_files.ready_for_ai.to_a
   end
 
+  test "ready for ai skips files with complete ai analysis" do
+    create_doc_file(extraction_status: "complete", extracted_text: "Already analyzed.", ai_status: "complete")
+    retryable_doc_file = create_doc_file(extraction_status: "complete", extracted_text: "Retry this.", ai_status: "failed")
+
+    assert_equal [ retryable_doc_file ], @package.doc_files.ready_for_ai.to_a
+  end
+
   test "needs text extraction includes old files with nil extraction status" do
     old_doc_file = create_doc_file(extraction_status: "pending", extracted_text: nil)
     old_doc_file.update_column(:extraction_status, nil)
@@ -85,10 +92,11 @@ class DocFileTest < ActiveSupport::TestCase
 
   private
 
-  def create_doc_file(extraction_status:, extracted_text:)
+  def create_doc_file(extraction_status:, extracted_text:, ai_status: "pending")
     @package.doc_files.create!(
       extraction_status: extraction_status,
       extracted_text: extracted_text,
+      ai_status: ai_status,
       file: {
         io: StringIO.new("Sample legal text."),
         filename: "#{extraction_status}-#{@package.doc_files.count}.txt",

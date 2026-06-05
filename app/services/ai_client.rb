@@ -5,7 +5,7 @@ require "uri"
 # Low-level wrapper for sending text to GitHub Models and returning the response text.
 class AiClient
   DEFAULT_ENDPOINT = "https://models.github.ai/inference/chat/completions"
-  DEFAULT_MODEL = "openai/gpt-4.1"
+  DEFAULT_MODEL = "openai/gpt-4.1-mini"
 
   # Public entrypoint: AiClient.call("Your prompt text")
   def self.call(input, client: nil, model: nil, json_response: false)

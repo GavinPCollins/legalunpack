@@ -49,6 +49,7 @@ class AnalyzeDocFileWithAi
 
       @doc_file.update!(
         ai_summary: result["summary"],
+        ai_micro_summary: result["micro_summary"].presence || result["summary"],
         ai_status: "complete",
         ai_error: nil,
         ai_processed_at: Time.current
@@ -72,6 +73,7 @@ class AnalyzeDocFileWithAi
       Return only valid JSON in this shape:
       {
         "summary": "A short plain-English summary of the whole file.",
+        "micro_summary": "A very short summary of the whole file in 8 words or fewer.",
         "clauses": [
           {
             "title": "string",

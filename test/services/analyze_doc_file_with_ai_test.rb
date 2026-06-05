@@ -42,6 +42,7 @@ class AnalyzeDocFileWithAiTest < ActiveSupport::TestCase
     assert_equal "Payment", result.dig("clauses", 0, "title")
     assert_equal "low", result.dig("clauses", 0, "risk_level")
     assert_equal true, captured_json_response
+    assert_includes captured_prompt, "micro_summary"
     assert_includes captured_prompt, "Payment is due within 14 days."
   ensure
     AiClient.define_singleton_method(:call, original_ai_call) if original_ai_call
@@ -58,6 +59,7 @@ class AnalyzeDocFileWithAiTest < ActiveSupport::TestCase
   test "saves parsed clauses to the doc file and package" do
     raw_response = {
       summary: "This file sets payment and termination obligations.",
+      micro_summary: "Payment and termination obligations.",
       clauses: [
         {
           title: "Payment",
@@ -94,6 +96,7 @@ class AnalyzeDocFileWithAiTest < ActiveSupport::TestCase
     @doc_file.reload
     assert_equal "complete", @doc_file.ai_status
     assert_equal "This file sets payment and termination obligations.", @doc_file.ai_summary
+    assert_equal "Payment and termination obligations.", @doc_file.ai_micro_summary
     assert_nil @doc_file.ai_error
     assert_not_nil @doc_file.ai_processed_at
   end

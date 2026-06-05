@@ -6,7 +6,7 @@ class PackagesController < ApplicationController
   end
 
   def show
-    @package = current_user.packages.includes(doc_files: { file_attachment: :blob }).find(params[:id])
+    @package = current_user.packages.includes(doc_files: [ :clauses, { file_attachment: :blob } ]).find(params[:id])
     enqueue_text_extraction_if_needed(@package)
   end
 
