@@ -1,0 +1,69 @@
+<%# doc_file summary page %>
+<section class="mx-auto w-full max-w-5xl py-8">
+  <div class="mb-6">
+    <%= link_to "Back to package", package_path(@package), class: "text-sm font-semibold text-cyan-800 hover:text-cyan-950" %>
+
+    <h1 class="mt-3 text-3xl font-semibold text-neutral-950">
+      AI Summary for <%= @doc_file.file.attached? ? @doc_file.file.filename.to_s : "Untitled file" %>
+    </h1>
+
+    <p class="mt-2 text-sm text-neutral-600">
+      Package: <%= @package.name.presence || "Untitled package" %>
+    </p>
+  </div>
+
+  <article class="rounded-md border border-neutral-200 bg-white p-5">
+    <header class="border-b border-neutral-200 pb-4">
+      <h2 class="text-lg font-semibold text-neutral-950">
+        <%= @doc_file.file.attached? ? @doc_file.file.filename.to_s : "Untitled file" %>
+      </h2>
+
+      <p class="mt-1 text-sm text-neutral-600">
+        Extraction: <%= @doc_file.extraction_status %> |
+        AI: <%= @doc_file.ai_status %>
+      </p>
+    </header>
+
+    <% if @doc_file.ai_error.present? %>
+      <div class="mt-4 rounded-md border border-red-200 bg-red-50 p-3">
+        <p class="text-sm font-semibold text-red-700">AI error</p>
+        <pre class="mt-2 whitespace-pre-wrap text-sm text-red-700"><%= @doc_file.ai_error %></pre>
+      </div>
+    <% end %>
+
+    <div class="mt-4">
+      <h3 class="text-sm font-semibold text-neutral-950">File summary</h3>
+      <p class="mt-2 whitespace-pre-wrap text-sm text-neutral-700">
+        <%= @doc_file.ai_summary.presence || "No AI summary saved yet." %>
+      </p>
+    </div>
+
+    <div class="mt-5">
+      <h3 class="text-sm font-semibold text-neutral-950">Clauses</h3>
+
+      <% if @doc_file.clauses.any? %>
+        <ol class="mt-3 space-y-4">
+          <% @doc_file.clauses.sort_by { |clause| clause.position || 0 }.each do |clause| %>
+            <li class="rounded-md border border-neutral-200 p-4">
+              <p class="text-sm font-semibold text-neutral-950">
+                <%= clause.position %>. <%= clause.title.presence || "Untitled clause" %>
+              </p>
+
+              <p class="mt-1 text-sm text-neutral-600">
+                Risk: <%= clause.risk_level.presence || "not set" %>
+              </p>
+
+              <p class="mt-3 text-sm font-medium text-neutral-800">Summary</p>
+              <p class="mt-1 whitespace-pre-wrap text-sm text-neutral-700"><%= clause.summary.presence || "No summary saved." %></p>
+
+              <p class="mt-3 text-sm font-medium text-neutral-800">Content</p>
+              <pre class="mt-1 whitespace-pre-wrap text-sm text-neutral-700"><%= clause.content %></pre>
+            </li>
+          <% end %>
+        </ol>
+      <% else %>
+        <p class="mt-2 text-sm text-neutral-600">No clauses saved yet.</p>
+      <% end %>
+    </div>
+  </article>
+</section>

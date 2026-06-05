@@ -112,7 +112,9 @@
               </span>
               <div class="min-w-0">
                 <% if doc_file.file.attached? %>
-                  <p class="truncate text-sm font-medium text-neutral-950"><%= doc_file.file.filename.to_s %></p>
+                  <%= link_to doc_file.file.filename.to_s,
+                        summary_doc_file_path(doc_file),
+                        class: "block truncate text-sm font-medium text-neutral-950 hover:text-emerald-800" %>
                   <p class="mt-0.5 text-xs text-neutral-500"><%= number_to_human_size(doc_file.file.byte_size) %></p>
                 <% else %>
                   <p class="text-sm font-medium text-neutral-950">Untitled file</p>

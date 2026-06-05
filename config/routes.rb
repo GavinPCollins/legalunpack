@@ -16,7 +16,9 @@ Rails.application.routes.draw do
   # end
 
   # CODEX add document updates
-  resources :doc_files, only: [:create, :destroy]
+  resources :doc_files, only: [:create, :destroy] do
+    get :summary, on: :member
+  end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
   # Can be used by load balancers and uptime monitors to verify that the app is live.
