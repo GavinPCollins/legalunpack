@@ -44,19 +44,12 @@
 }
 
 .page-item {
-  @apply w-full;
+  @apply mx-4 w-auto;
 }
 
 /* Page header */
 
 /* Page components  */
-.header-section{
-  @apply p-6;
-
-  h1{
-    @apply text-2xl font-bold tracking-tight text-cyan-950 sm:text-3xl;
-  }
-}
 
 .content {
   @apply flex w-full flex-col bg-white rounded-lg p-6 text-cyan-950;
