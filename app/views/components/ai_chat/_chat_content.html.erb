@@ -30,10 +30,9 @@
         title_id: "ai-chat-drawer-title",
         footer: drawer_footer
       } do %>
-  <div class="ai-chat-thread" aria-live="polite">
+  <div class="ai-chat-thread" aria-live="polite" data-ai-chat-drawer-target="thread">
     <% messages.each do |message| %>
       <%= render partial: message.fetch(:partial), locals: message.fetch(:locals, {}) %>
     <% end %>
-    <p> example to user input</p>
   </div>
 <% end %>

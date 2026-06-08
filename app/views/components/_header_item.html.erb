@@ -27,6 +27,7 @@
 <%# ---- AI chat ---- %>
 <% ai_chat_label = local_assigns[:ai_chat_label] || "Open AI chat" %>
 <% ai_chat_path = local_assigns[:ai_chat_path] %>
+<% ai_chat_url = local_assigns[:ai_chat_url] %>
 <% ai_chat_drawer_title = local_assigns[:ai_chat_drawer_title] || "AI chat" %>
 <% ai_chat_drawer_body = local_assigns[:ai_chat_drawer_body] || "Ask a question about this package. Chat responses will appear here once the chat action is connected." %>
 <% show_ai_chat = local_assigns.fetch(:show_ai_chat, true) %>
@@ -38,8 +39,11 @@
 <% header_controllers = [] %>
 <% header_controllers << "search-drawer" if show_search_drawer %>
 <% header_controllers << "ai-chat-drawer" if show_ai_chat && ai_chat_path.blank? %>
+<% header_data = {} %>
+<% header_data[:"ai-chat-drawer-url-value"] = ai_chat_url if ai_chat_url.present? %>
 
-<header class="item-header"<%= " data-controller=\"#{header_controllers.join(" ")}\"".html_safe if header_controllers.any? %>>
+<%= tag.header class: "item-header",
+      data: header_data.merge(header_controllers.any? ? { controller: header_controllers.join(" ") } : {}) do %>
   <div class="item-header-frame">
     <% if parent_label.present? && parent_path.present? %>
       <div class="item-header-parent">
@@ -183,4 +187,4 @@
           drawer_title: ai_chat_drawer_title,
           drawer_body: ai_chat_drawer_body %>
   <% end %>
-</header>
+<% end %>
