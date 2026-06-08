@@ -15,49 +15,35 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     assert_select "turbo-frame#package_search_results" do |frame|
-      assert_includes frame.first.text, "Press Return to search AI summaries across all packages."
+      assert_empty frame.first.text.strip
     end
   end
 
   # CODEX search function updates
-  test "should search summaries across all current user packages" do
-    first_package = @user.packages.create!(name: "Court notice")
-    first_doc_file = first_package.doc_files.create!(
-      ai_summary: "This document explains payment obligations.",
-      file: fixture_file_upload("sample.txt", "text/plain")
-    )
-    second_package = @user.packages.create!(name: "Supplier agreement")
-    second_doc_file = second_package.doc_files.create!(
-      ai_summary: "This document also covers payment timing.",
-      file: fixture_file_upload("sample.txt", "text/plain")
-    )
+  test "should search by package name" do
+    @user.packages.create!(name: "Court notice")
 
-    get packages_url, params: { q: "payment" }
+    get packages_url, params: { q: "court" }
 
     assert_response :success
     assert_select "turbo-frame#package_search_results" do
-      assert_select "a[href='#{summary_doc_file_path(first_doc_file, highlight: "payment")}']"
-      assert_select "a[href='#{summary_doc_file_path(second_doc_file, highlight: "payment")}']"
       assert_select "p", text: "Court notice"
-      assert_select "p", text: "Supplier agreement"
-      assert_select "mark", text: /payment/i, minimum: 2
+      assert_select "p", text: "Lease review", count: 0
     end
   end
 
   # CODEX search function updates
-  test "should not search by uploaded filename alone" do
+  test "should search by uploaded filename" do
     package = @user.packages.create!(name: "Employment contract")
-    package.doc_files.create!(
-      ai_summary: "This document explains termination obligations.",
-      file: fixture_file_upload("sample.txt", "text/plain")
-    )
+    package.doc_files.create!(file: fixture_file_upload("sample.txt", "text/plain"))
 
     get packages_url, params: { q: "sample" }
 
     assert_response :success
     assert_select "turbo-frame#package_search_results" do
-      assert_select "p", text: "No matching summaries"
-      assert_select "p", text: "Employment contract", count: 0
+      assert_select "p", text: "Employment contract"
+      assert_select "p", text: "sample.txt"
+      assert_select "p", text: "Lease review", count: 0
     end
   end
 
@@ -73,9 +59,7 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "turbo-frame#package_search_results" do
-      assert_select "a[href='#{summary_doc_file_path(package.doc_files.first, highlight: "indemnity")}']"
       assert_select "p", text: "Supplier agreement"
-      assert_select "mark", text: /indemnity/i
       assert_select "p", text: "Lease review", count: 0
     end
   end
@@ -91,7 +75,7 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "turbo-frame#package_search_results" do
       assert_select "p", text: "Private settlement", count: 0
-      assert_select "p", text: "No matching summaries"
+      assert_select "p", text: "No matching packages"
     end
   end
 

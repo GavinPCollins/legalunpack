@@ -2,7 +2,7 @@ class PackagesController < ApplicationController
   def index
     # CODEX search function updates
     @query = params[:q].to_s.strip
-    @doc_files = package_summary_search_results
+    @packages = package_search_results
   end
 
   def show
@@ -80,15 +80,13 @@ class PackagesController < ApplicationController
   end
 
   # CODEX search function updates
-  def package_summary_search_results
-    return DocFile.none if @query.blank?
+  def package_search_results
+    return Package.none if @query.blank?
 
-    DocFile
-      .joins(:package)
-      .where(packages: { user_id: current_user.id })
-      .includes(:package, file_attachment: :blob)
-      .search_by_ai_summary(@query)
-      .order(updated_at: :desc)
+    current_user.packages
+                .search_by_name_filename_and_summary(@query)
+                .includes(doc_files: { file_attachment: :blob })
+                .order(created_at: :desc)
   end
 
   def uploaded_files_present?

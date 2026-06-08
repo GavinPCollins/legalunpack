@@ -1,7 +1,7 @@
 <%# CODEX search function %>
-<div>
+<div class="mt-6 border-t border-neutral-200 pt-5">
   <div class="flex items-center justify-between gap-4 text-sm text-neutral-600">
-    <p class="search-drawer-query">Results for "<%= query %>"</p>
+    <h2 class="text-sm font-semibold text-neutral-950">Results</h2>
     <%= link_to "New package", new_package_path, class: "font-semibold text-cyan-800 hover:text-cyan-950", data: { turbo_frame: "_top" } %>
   </div>
 
