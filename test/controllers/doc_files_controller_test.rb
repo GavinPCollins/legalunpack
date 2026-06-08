@@ -55,6 +55,9 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "sample.txt"
     assert_includes response.body, "Payment obligations."
     assert_includes response.body, "2 high-risk clauses"
+    assert_includes response.body, "High-risk clauses"
+    assert_includes response.body, "Penalty"
+    assert_includes response.body, "Indemnity"
     assert_includes response.body, "Complete"
   end
 
