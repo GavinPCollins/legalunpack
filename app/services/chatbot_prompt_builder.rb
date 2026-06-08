@@ -5,7 +5,8 @@ class ChatbotPromptBuilder
   # - question: String
   # - target: "package" | "doc_file" | "clause"
   # - target_id: id for doc_file or clause when applicable
-  def self.build(package, question:, target: "package", target_id: nil)
+  # - history: previous ChatMessage records for follow-up context
+  def self.build(package, question:, target: "package", target_id: nil, history: []) # rubocop:disable Metrics/MethodLength,Metrics/PerceivedComplexity
     context_parts = []
 
     case target.to_s
@@ -28,6 +29,8 @@ class ChatbotPromptBuilder
       You are a helpful legal assistant. Use the document text provided below as the PRIMARY source.
       First, attempt to answer STRICTLY and ONLY from the document text. If the documents contain enough information, answer using ONLY those documents and cite the relevant text where possible.
 
+      Use the conversation history only to understand follow-up questions, references, and context from the user. Do not treat conversation history as a source of document facts unless those facts are supported by the document text.
+
       If the documents do NOT contain enough information to answer the question, first state exactly: "Insufficient document information to answer." Then, optionally provide an additional section titled "External analysis" where you MAY apply general legal principles or common practice to offer interpretation.
 
       In the "External analysis" section you MUST:
@@ -44,6 +47,8 @@ class ChatbotPromptBuilder
                     context.truncate(28_000, separator: "\n\n")
                   end
 
+    history_body = history_prompt(history)
+
     <<~PROMPT
       #{header}
 
@@ -53,7 +58,11 @@ class ChatbotPromptBuilder
       Document text:
       #{prompt_body}
 
-      Question: #{question}
+      Conversation history:
+      #{history_body}
+
+      Current question:
+      #{question}
 
       Answer in two possible parts as needed:
       1) A concise answer strictly from the document text (if available).
@@ -62,4 +71,20 @@ class ChatbotPromptBuilder
       Keep the answer concise and clearly separate document-based findings from any external reasoning.
     PROMPT
   end
+
+  def self.history_prompt(history)
+    lines = Array(history).map do |message|
+      role = message.role.to_s.capitalize.presence || "Message"
+      content = message.content.to_s.strip.truncate(1_000, separator: " ")
+
+      next if content.blank?
+
+      "#{role}: #{content}"
+    end.compact
+
+    return "No prior conversation." if lines.blank?
+
+    lines.join("\n\n").truncate(6_000, separator: "\n\n")
+  end
+  private_class_method :history_prompt
 end

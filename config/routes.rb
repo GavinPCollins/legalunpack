@@ -6,7 +6,7 @@ Rails.application.routes.draw do
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
   # 7 CRUD routes for packages
   resources :packages do
-    resources :chatbot_sessions, only: [:create]
+    resources :chatbot_sessions, only: [:index, :create]
     post :analyze, on: :member
     get :analysis, on: :member
   end
