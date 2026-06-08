@@ -16,6 +16,13 @@ export default class extends Controller {
     this.dialogTarget.close()
   }
 
+  submitOnEnter(event) {
+    if (event.key !== "Enter" || event.shiftKey) return
+
+    event.preventDefault()
+    this.submit(event)
+  }
+
   async submit(event) {
     event.preventDefault()
     if (!this.hasInputTarget || !this.hasThreadTarget || !this.hasUrlValue) return
