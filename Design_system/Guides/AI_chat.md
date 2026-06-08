@@ -19,7 +19,8 @@ That wrapper keeps existing calls working while the AI-specific pieces stay grou
 - `components/ai_chat_drawer` renders the full AI chat drawer.
 - `components/ai_chat/chat_content` owns the drawer body, message thread, and footer input.
 - `components/ai_chat/ai_output1` renders an AI response bubble.
-- `components/ai_chat/ai_output2` renders a user message bubble.
+- `components/ai_chat/user_message` renders a user message bubble.
+- `components/ai_chat/ai_output2` still renders the user message bubble for compatibility.
 - `app/assets/tailwind/components/ai_chat.css` contains the chat-specific styles.
 - `app/javascript/controllers/ai_chat_drawer_controller.js` opens and closes the drawer dialog.
 
@@ -58,7 +59,7 @@ Pass messages into the drawer as an array. Each item names the partial and the l
           }
         },
         {
-          partial: "components/ai_chat/ai_output2",
+          partial: "components/ai_chat/user_message",
           locals: {
             sender: "You",
             message: "Can you explain it in plain English?",
@@ -87,10 +88,10 @@ Supported locals:
 
 ## User Message Bubble
 
-Use `ai_output2` for user messages.
+Use `user_message` for user messages.
 
 ```erb
-<%= render "components/ai_chat/ai_output2",
+<%= render "components/ai_chat/user_message",
       message: "What should I check first?",
       time: "Now" %>
 ```
