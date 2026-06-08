@@ -34,6 +34,14 @@ class DocFilesController < ApplicationController
   # CODEX file summary updates
   def summary_search
     @query = params[:q].to_s.strip
+
+    if params[:package_id].present?
+      @package = package_summary_search_result
+
+      return render partial: "doc_files/package_summary_search_results",
+                    locals: { package: @package, query: @query }
+    end
+
     @doc_files = summary_search_results
 
     render partial: "doc_files/summary_search_results",
@@ -65,6 +73,21 @@ class DocFilesController < ApplicationController
     doc_files = doc_files.where(package_id: params[:package_id]) if params[:package_id].present?
 
     doc_files.search_by_ai_summary(@query).order(updated_at: :desc)
+  end
+
+  def package_summary_search_result
+    return nil if @query.blank?
+
+    package = current_user.packages
+                          .includes(:clauses, doc_files: { file_attachment: :blob })
+                          .find(params[:package_id])
+
+    if current_user.packages
+                   .where(id: package.id)
+                   .search_by_ai_summary_and_clauses(@query)
+                   .exists?
+      package
+    end
   end
 
   def add_doc_file?(uploaded_file)

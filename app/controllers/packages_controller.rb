@@ -84,7 +84,7 @@ class PackagesController < ApplicationController
     return Package.none if @query.blank?
 
     current_user.packages
-                .search_by_name_filename_and_summary(@query)
+                .search_by_name_and_filename(@query)
                 .includes(doc_files: { file_attachment: :blob })
                 .order(created_at: :desc)
   end

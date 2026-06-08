@@ -113,6 +113,46 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "This file sets payment obligations."
   end
 
+  test "summary should anchor saved clauses" do
+    doc_file = @package.doc_files.create!(
+      ai_summary: "This file sets payment obligations.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    clause = doc_file.clauses.create!(
+      package: @package,
+      title: "Payment",
+      content: "Payment is due within 14 days.",
+      risk_level: "low",
+      summary: "Sets a payment deadline.",
+      position: 1
+    )
+
+    get summary_doc_file_url(doc_file)
+
+    assert_response :success
+    assert_select "li##{dom_id(clause)}"
+  end
+
+  test "should highlight requested clause text in summary" do
+    doc_file = @package.doc_files.create!(
+      ai_summary: "This file sets payment obligations.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    clause = doc_file.clauses.create!(
+      package: @package,
+      title: "Payment",
+      content: "Payment is due within 14 days.",
+      risk_level: "low",
+      summary: "Sets a payment deadline.",
+      position: 1
+    )
+
+    get summary_doc_file_url(doc_file), params: { highlight: "payment" }
+
+    assert_response :success
+    assert_select "li##{dom_id(clause)} mark[data-summary-highlight-target='match']", text: /payment/i
+  end
+
   test "should highlight requested summary text" do
     doc_file = @package.doc_files.create!(
       ai_summary: "This file sets payment obligations.",
@@ -122,7 +162,10 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     get summary_doc_file_url(doc_file), params: { highlight: "payment" }
 
     assert_response :success
+    assert_select "div#file-summary"
     assert_select "mark[data-summary-highlight-target='match']", text: /payment/i
+    assert_select "button[data-action='summary-highlight#previous']", text: "Previous match"
+    assert_select "button[data-action='summary-highlight#next']", text: "Next match"
   end
 
   test "should not get summary for another user's doc file" do
@@ -147,10 +190,98 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "turbo-frame#summary_search_results" do
-      assert_select "a[href='#{summary_doc_file_path(doc_file, highlight: "payment")}']"
+      summary_path = summary_doc_file_path(doc_file, highlight: "payment", anchor: "file-summary")
+      assert_select "a[href='#{summary_path}']"
       assert_select "p", text: "sample.txt"
       assert_select "p", text: "Lease review"
       assert_select "mark", text: /payment/i
+    end
+  end
+
+  test "should search within current package for header search" do
+    doc_file = @package.doc_files.create!(
+      extracted_text: "The tenant must repair the air conditioner.",
+      extraction_status: "complete",
+      ai_summary: "This file sets repair obligations. Repair work must be scheduled.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    clause = @package.clauses.create!(
+      doc_file: doc_file,
+      title: "Repairs",
+      content: "The tenant must repair the air conditioner.",
+      risk_level: "medium",
+      summary: "Creates an air conditioner repair obligation.",
+      position: 2
+    )
+    other_package = @user.packages.create!(name: "Other repair package")
+    other_package.doc_files.create!(
+      extracted_text: "Repair obligations in another package.",
+      extraction_status: "complete",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+
+    get summary_search_doc_files_url, params: { q: "repair", package_id: @package.id }
+
+    assert_response :success
+    assert_select "turbo-frame#summary_search_results" do
+      assert_select "p", text: /matches in this package/
+      assert_select "summary", count: 0
+      assert_select "p", text: "Clause 2 match"
+      assert_select "p", text: "Creates an air conditioner repair obligation."
+      clause_path = summary_doc_file_path(doc_file, highlight: "repair", anchor: dom_id(clause))
+      assert_select "a[href='#{clause_path}']", text: "Open clause"
+      summary_path = summary_doc_file_path(doc_file, highlight: "repair", anchor: "file-summary")
+      assert_select "a[href='#{summary_path}']" do
+        assert_select "p", text: /AI summary match/
+        assert_select "span", text: "2 matches"
+      end
+      assert_select "p", text: "Other repair package", count: 0
+      assert_select "mark", text: /repair/i
+    end
+    assert response.body.index("Clause 2 match") < response.body.index("AI summary match")
+  end
+
+  test "should only search ai summary and clauses within current package header search" do
+    @package.update!(
+      name: "Payment workspace",
+      category: "Payment category",
+      overview: "Payment overview",
+      status: "Payment status"
+    )
+    @package.doc_files.create!(
+      ai_micro_summary: "Payment micro summary.",
+      ai_error: "Payment AI error.",
+      extraction_error: "Payment extraction error.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+
+    get summary_search_doc_files_url, params: { q: "payment", package_id: @package.id }
+
+    assert_response :success
+    assert_select "turbo-frame#summary_search_results" do
+      assert_select "p", text: "No matching package results"
+      assert_select "p", text: /Package name match/, count: 0
+      assert_select "p", text: /File name match/, count: 0
+      assert_select "p", text: /Package category match/, count: 0
+      assert_select "p", text: /AI micro summary match/, count: 0
+      assert_select "p", text: /AI error match/, count: 0
+      assert_select "p", text: /Extraction error match/, count: 0
+    end
+  end
+
+  test "should not search extracted text within current package header search" do
+    @package.doc_files.create!(
+      extracted_text: "The tenant must repair the air conditioner.",
+      extraction_status: "complete",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+
+    get summary_search_doc_files_url, params: { q: "conditioner", package_id: @package.id }
+
+    assert_response :success
+    assert_select "turbo-frame#summary_search_results" do
+      assert_select "p", text: "No matching package results"
+      assert_select "p", text: "Extracted text match", count: 0
     end
   end
 
