@@ -4,7 +4,21 @@
   {
     partial: "components/ai_chat/ai_output1",
     locals: {
-      message: drawer_body,
+      message: "hey! I'm here to help!",
+      time: "Now"
+    }
+  },
+  {
+    partial: "components/ai_chat/user_message",
+          locals: {
+            message: "Can you explain the high-risk clauses?",
+            time: "Now"
+          }
+  },
+    {
+    partial: "components/ai_chat/ai_output1",
+    locals: {
+      message: "No! not yet.. George is working on it!",
       time: "Now"
     }
   }
@@ -34,6 +48,5 @@
     <% messages.each do |message| %>
       <%= render partial: message.fetch(:partial), locals: message.fetch(:locals, {}) %>
     <% end %>
-    <p> example to user input</p>
   </div>
 <% end %>

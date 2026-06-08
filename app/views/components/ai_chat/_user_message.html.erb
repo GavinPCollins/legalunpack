@@ -1,0 +1,23 @@
+<% sender = local_assigns[:sender] || "You" %>
+<% message = local_assigns[:message] || "Type a message to ask about this package." %>
+<% time = local_assigns[:time] %>
+<% status = local_assigns[:status] %>
+
+<div class="ai-chat-message ai-chat-message-user">
+  <div class="ai-chat-bubble ai-chat-bubble-user">
+    <div class="ai-chat-meta ai-chat-meta-user">
+      <span class="ai-chat-sender"><%= sender %></span>
+      <% if time.present? %>
+        <time class="ai-chat-time"><%= time %></time>
+      <% end %>
+    </div>
+
+    <p class="ai-chat-text"><%= message %></p>
+
+    <% if status.present? %>
+      <span class="ai-chat-status ai-chat-status-user"><%= status %></span>
+    <% end %>
+  </div>
+
+  <div class="ai-chat-avatar ai-chat-avatar-user" aria-hidden="true">You</div>
+</div>
