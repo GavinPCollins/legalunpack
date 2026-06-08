@@ -1,0 +1,23 @@
+<% sender = local_assigns[:sender] || "LegalUnpack AI" %>
+<% message = local_assigns[:message] || "Ask a question about this package and the AI response will appear here." %>
+<% time = local_assigns[:time] %>
+<% status = local_assigns[:status] %>
+
+<div class="ai-chat-message ai-chat-message-ai">
+  <div class="ai-chat-avatar" aria-hidden="true">AI</div>
+
+  <div class="ai-chat-bubble ai-chat-bubble-ai">
+    <div class="ai-chat-meta">
+      <span class="ai-chat-sender"><%= sender %></span>
+      <% if time.present? %>
+        <time class="ai-chat-time"><%= time %></time>
+      <% end %>
+    </div>
+
+    <p class="ai-chat-text"><%= message %></p>
+
+    <% if status.present? %>
+      <span class="ai-chat-status"><%= status %></span>
+    <% end %>
+  </div>
+</div>
