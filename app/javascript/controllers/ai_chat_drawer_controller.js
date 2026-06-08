@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["dialog", "thread"]
+  static targets = ["dialog", "thread", "input", "submitButton"]
   static values = { url: String }
 
   open() {
@@ -14,6 +14,59 @@ export default class extends Controller {
 
   close() {
     this.dialogTarget.close()
+  }
+
+  async submit(event) {
+    event.preventDefault()
+    if (!this.hasInputTarget || !this.hasThreadTarget || !this.hasUrlValue) return
+
+    const question = this.inputTarget.value.trim()
+    if (!question) return
+
+    this.setFormDisabled(true)
+    this.clearPlaceholderStatus()
+    const pendingUserMessage = this.messageElement({
+      role: "user",
+      content: question,
+      created_at: new Date().toISOString()
+    })
+    const thinkingMessage = this.statusElement("Thinking...")
+
+    this.threadTarget.appendChild(pendingUserMessage)
+    this.threadTarget.appendChild(thinkingMessage)
+    this.scrollToLatest()
+    this.inputTarget.value = ""
+
+    try {
+      const response = await fetch(this.urlValue, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "X-CSRF-Token": this.csrfToken()
+        },
+        body: JSON.stringify({ question })
+      })
+
+      const data = await response.json()
+      pendingUserMessage.remove()
+      thinkingMessage.remove()
+
+      if (data.user_message) this.threadTarget.appendChild(this.messageElement(data.user_message))
+      if (data.assistant_message) this.threadTarget.appendChild(this.messageElement(data.assistant_message))
+
+      if (!response.ok && !data.assistant_message) {
+        this.renderStatus(data.error || "Chatbot response failed. Please try again.")
+      }
+    } catch (_error) {
+      pendingUserMessage.remove()
+      thinkingMessage.remove()
+      this.renderStatus("Chatbot response failed. Please try again.")
+    } finally {
+      this.setFormDisabled(false)
+      this.inputTarget.focus()
+      this.scrollToLatest()
+    }
   }
 
   async loadHistory() {
@@ -48,9 +101,25 @@ export default class extends Controller {
     messages.forEach((message) => {
       this.threadTarget.appendChild(this.messageElement(message))
     })
+    this.scrollToLatest()
+  }
+
+  clearPlaceholderStatus() {
+    const onlyMessage = this.threadTarget.querySelector(".ai-chat-message")
+    if (!onlyMessage || this.threadTarget.children.length !== 1) return
+
+    const text = onlyMessage.querySelector(".ai-chat-text")?.textContent
+    if (text === "Ask a question about this package.") {
+      this.threadTarget.innerHTML = ""
+    }
   }
 
   renderStatus(message) {
+    this.threadTarget.appendChild(this.statusElement(message))
+    this.scrollToLatest()
+  }
+
+  statusElement(message) {
     const wrapper = document.createElement("div")
     wrapper.className = "ai-chat-message ai-chat-message-ai"
 
@@ -69,7 +138,7 @@ export default class extends Controller {
     bubble.appendChild(text)
     wrapper.appendChild(avatar)
     wrapper.appendChild(bubble)
-    this.threadTarget.appendChild(wrapper)
+    return wrapper
   }
 
   messageElement(message) {
@@ -131,5 +200,21 @@ export default class extends Controller {
       hour: "numeric",
       minute: "2-digit"
     }).format(date)
+  }
+
+  setFormDisabled(disabled) {
+    this.inputTarget.disabled = disabled
+
+    if (this.hasSubmitButtonTarget) {
+      this.submitButtonTarget.disabled = disabled
+    }
+  }
+
+  csrfToken() {
+    return document.querySelector("meta[name='csrf-token']")?.content || ""
+  }
+
+  scrollToLatest() {
+    this.threadTarget.lastElementChild?.scrollIntoView({ block: "end" })
   }
 }

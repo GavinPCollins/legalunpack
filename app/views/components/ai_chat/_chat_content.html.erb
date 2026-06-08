@@ -25,13 +25,14 @@
 ] %>
 
 <% drawer_footer = capture do %>
-  <form class="ai-chat-form">
+  <form class="ai-chat-form" data-action="submit->ai-chat-drawer#submit">
     <label class="sr-only" for="ai-chat-drawer-message">Ask AI</label>
     <textarea id="ai-chat-drawer-message"
               rows="2"
               placeholder="Ask about this package"
-              class="ai-chat-input"></textarea>
-    <button type="button" class="ai-chat-submit">
+              class="ai-chat-input"
+              data-ai-chat-drawer-target="input"></textarea>
+    <button type="submit" class="ai-chat-submit" data-ai-chat-drawer-target="submitButton">
       Ask
     </button>
   </form>
