@@ -1,4 +1,4 @@
-web: bin/rails server
+web: REDIS_URL=redis://localhost:6380/0 bin/rails server
 css: bin/rails tailwindcss:watch
-redis: redis-server
-worker: bundle exec sidekiq
+redis: redis-server --port 6380 --save "" --appendonly no
+worker: REDIS_URL=redis://localhost:6380/0 bundle exec sidekiq
