@@ -27,13 +27,23 @@
 <%# ---- AI chat ---- %>
 <% ai_chat_label = local_assigns[:ai_chat_label] || "Open AI chat" %>
 <% ai_chat_path = local_assigns[:ai_chat_path] %>
+<% ai_chat_url = local_assigns[:ai_chat_url] %>
+<% ai_chat_drawer_title = local_assigns[:ai_chat_drawer_title] || "AI chat" %>
+<% ai_chat_drawer_body = local_assigns[:ai_chat_drawer_body] || "Ask a question about this package. Chat responses will appear here once the chat action is connected." %>
 <% show_ai_chat = local_assigns.fetch(:show_ai_chat, true) %>
 
 <%# ---- Overflow actions ---- %>
 <% overflow_label = local_assigns[:overflow_label] || "Open options" %>
 <% overflow_actions = local_assigns[:overflow_actions] || [] %>
 
-<header class="item-header"<%= " data-controller=\"search-drawer\"".html_safe if show_search_drawer %>>
+<% header_controllers = [] %>
+<% header_controllers << "search-drawer" if show_search_drawer %>
+<% header_controllers << "ai-chat-drawer" if show_ai_chat && ai_chat_path.blank? %>
+<% header_data = {} %>
+<% header_data[:"ai-chat-drawer-url-value"] = ai_chat_url if ai_chat_url.present? %>
+
+<%= tag.header class: "item-header",
+      data: header_data.merge(header_controllers.any? ? { controller: header_controllers.join(" ") } : {}) do %>
   <div class="item-header-frame">
     <% if parent_label.present? && parent_path.present? %>
       <div class="item-header-parent">
@@ -102,7 +112,7 @@
             </svg>
           <% end %>
         <% else %>
-          <button type="button" class="item-header-icon-button">
+          <button type="button" class="item-header-icon-button" data-action="ai-chat-drawer#open">
             <span class="sr-only"><%= ai_chat_label %></span>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" class="size-6">
               <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 0 1 .778-.332 48.294 48.294 0 0 0 5.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
@@ -151,39 +161,30 @@
   </div>
 
   <% if show_search_drawer %>
-    <dialog aria-labelledby="search-drawer-title" class="search-drawer" data-search-drawer-target="dialog">
-      <div tabindex="0" class="search-drawer-shell">
-        <div class="search-drawer-panel">
-          <div class="search-drawer-content">
-            <div class="search-drawer-header">
-              <h2 id="search-drawer-title"><%= search_drawer_title %></h2>
-              <div class="search-drawer-close-wrap">
-                <button type="button" class="search-drawer-close" data-action="search-drawer#close">
-                  <span class="absolute -inset-2.5"></span>
-                  <span class="sr-only">Close panel</span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" data-slot="icon" aria-hidden="true" class="size-6">
-                    <path d="M6 18 18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div class="search-drawer-body">
-              <p class="search-drawer-query" data-search-drawer-target="queryText"></p>
-              <% if search_frame_id.present? %>
-                <%= turbo_frame_tag search_frame_id do %>
-                  <% if search_frame_content.present? %>
-                    <%= search_frame_content %>
-                  <% else %>
-                    <p class="search-drawer-empty"><%= search_drawer_body %></p>
-                  <% end %>
-                <% end %>
-              <% else %>
-                <p class="search-drawer-empty"><%= search_drawer_body %></p>
-              <% end %>
-            </div>
-          </div>
-        </div>
-      </div>
-    </dialog>
+    <%= render layout: "components/drawer",
+          locals: {
+            controller: "search-drawer",
+            title: search_drawer_title,
+            title_id: "search-drawer-title"
+          } do %>
+      <p class="search-drawer-query" data-search-drawer-target="queryText"></p>
+      <% if search_frame_id.present? %>
+        <%= turbo_frame_tag search_frame_id do %>
+          <% if search_frame_content.present? %>
+            <%= search_frame_content %>
+          <% else %>
+            <p class="search-drawer-empty"><%= search_drawer_body %></p>
+          <% end %>
+        <% end %>
+      <% else %>
+        <p class="search-drawer-empty"><%= search_drawer_body %></p>
+      <% end %>
+    <% end %>
   <% end %>
-</header>
+
+  <% if show_ai_chat && ai_chat_path.blank? %>
+    <%= render "components/ai_chat_drawer",
+          drawer_title: ai_chat_drawer_title,
+          drawer_body: ai_chat_drawer_body %>
+  <% end %>
+<% end %>

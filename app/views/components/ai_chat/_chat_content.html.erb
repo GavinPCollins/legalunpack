@@ -1,0 +1,54 @@
+<% drawer_title = local_assigns[:drawer_title] || "AI chat" %>
+<% drawer_body = local_assigns[:drawer_body] || "Ask a question about this package. Chat responses will appear here once the chat action is connected." %>
+<% messages = local_assigns[:messages] || [
+  {
+    partial: "components/ai_chat/ai_output1",
+    locals: {
+      message: "hey! I'm here to help!",
+      time: "Now"
+    }
+  },
+  {
+    partial: "components/ai_chat/user_message",
+          locals: {
+            message: "Can you explain the high-risk clauses?",
+            time: "Now"
+          }
+  },
+    {
+    partial: "components/ai_chat/ai_output1",
+    locals: {
+      message: "No! not yet.. George is working on it!",
+      time: "Now"
+    }
+  }
+] %>
+
+<% drawer_footer = capture do %>
+  <form class="ai-chat-form" data-action="submit->ai-chat-drawer#submit">
+    <label class="sr-only" for="ai-chat-drawer-message">Ask AI</label>
+    <textarea id="ai-chat-drawer-message"
+              rows="2"
+              placeholder="Ask about this package"
+              class="ai-chat-input"
+              data-ai-chat-drawer-target="input"
+              data-action="keydown->ai-chat-drawer#submitOnEnter"></textarea>
+    <button type="submit" class="ai-chat-submit" data-ai-chat-drawer-target="submitButton">
+      Ask
+    </button>
+  </form>
+<% end %>
+
+<%= render layout: "components/drawer",
+      locals: {
+        controller: "ai-chat-drawer",
+        title: drawer_title,
+        title_id: "ai-chat-drawer-title",
+        footer: drawer_footer
+      } do %>
+  <div class="ai-chat-thread" aria-live="polite" data-ai-chat-drawer-target="thread">
+    <% messages.each do |message| %>
+      <%= render partial: message.fetch(:partial), locals: message.fetch(:locals, {}) %>
+    <% end %>
+  </div>
+<% end %>

@@ -9,6 +9,7 @@ class Package < ApplicationRecord
   has_many :doc_files, dependent: :destroy
   has_many :clauses, dependent: :destroy
   has_many :file_blobs, through: :doc_files, source: :file_blob
+  has_many :chat_messages, dependent: :destroy
 
   # CODEX search function updates
   pg_search_scope :search_by_name_and_filename,

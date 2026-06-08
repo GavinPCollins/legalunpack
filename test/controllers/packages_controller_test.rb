@@ -201,7 +201,9 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     get package_url(@package)
 
     assert_response :success
-    assert_select "form[action='#{package_path(@package)}'][method='post'] button", text: "Delete package", minimum: 1
+    assert_select "form[action='#{package_path(@package)}'][method='post'] button", text: "Delete package" do |buttons|
+      assert buttons.size >= 2, "expected at least 2 Delete package buttons, found #{buttons.size}"
+    end
   end
 
   test "should enqueue text extraction when opening package with unextracted files" do

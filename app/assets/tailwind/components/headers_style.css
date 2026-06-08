@@ -110,12 +110,12 @@
   }
 
   .search-drawer-content {
-    @apply relative flex h-full flex-col overflow-y-auto bg-white py-6 shadow-xl;
+    @apply relative flex h-full flex-col overflow-hidden bg-white py-6 shadow-xl;
     @apply dark:bg-gray-800 dark:after:absolute dark:after:inset-y-0 dark:after:left-0 dark:after:w-px dark:after:bg-white/10;
   }
 
   .search-drawer-header {
-    @apply flex items-start justify-between px-4 sm:px-6;
+    @apply flex shrink-0 items-start justify-between px-4 sm:px-6;
 
     h2 {
       @apply text-base font-semibold text-gray-900 dark:text-white;
@@ -132,7 +132,11 @@
   }
 
   .search-drawer-body {
-    @apply relative mt-6 flex-1 px-4 sm:px-6;
+    @apply relative mt-6 flex-1 overflow-y-auto px-4 sm:px-6;
+  }
+
+  .search-drawer-footer {
+    @apply shrink-0 border-t border-neutral-200 bg-white px-4 pt-4 sm:px-6;
   }
 
   .search-drawer-query {

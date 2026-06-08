@@ -1,0 +1,53 @@
+<% controller = local_assigns.fetch(:controller) %>
+<% title = local_assigns.fetch(:title) %>
+<% title_id = local_assigns[:title_id] || "#{controller}-title" %>
+<% subtitle = local_assigns[:subtitle] %>
+<% dialog_class = local_assigns[:dialog_class] || "search-drawer" %>
+<% shell_class = local_assigns[:shell_class] || "search-drawer-shell" %>
+<% panel_class = local_assigns[:panel_class] || "search-drawer-panel" %>
+<% content_class = local_assigns[:content_class] || "search-drawer-content" %>
+<% header_class = local_assigns[:header_class] || "search-drawer-header" %>
+<% title_class = local_assigns[:title_class] %>
+<% subtitle_class = local_assigns[:subtitle_class] || "mt-1 text-sm text-neutral-500" %>
+<% close_wrap_class = local_assigns[:close_wrap_class] || "search-drawer-close-wrap" %>
+<% close_button_class = local_assigns[:close_button_class] || "search-drawer-close" %>
+<% body_class = local_assigns[:body_class] || "search-drawer-body" %>
+<% footer = local_assigns[:footer] %>
+<% footer_class = local_assigns[:footer_class] || "search-drawer-footer" %>
+
+<dialog aria-labelledby="<%= title_id %>" class="<%= dialog_class %>" data-<%= controller %>-target="dialog">
+  <div tabindex="0" class="<%= shell_class %>">
+    <div class="<%= panel_class %>">
+      <div class="<%= content_class %>">
+        <div class="<%= header_class %>">
+          <div>
+            <h2 id="<%= title_id %>"<%= " class=\"#{title_class}\"".html_safe if title_class.present? %>><%= title %></h2>
+            <% if subtitle.present? %>
+              <p class="<%= subtitle_class %>"><%= subtitle %></p>
+            <% end %>
+          </div>
+
+          <div class="<%= close_wrap_class %>">
+            <button type="button" class="<%= close_button_class %>" data-action="<%= controller %>#close">
+              <span class="absolute -inset-2.5"></span>
+              <span class="sr-only">Close panel</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" data-slot="icon" aria-hidden="true" class="size-6">
+                <path d="M6 18 18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="<%= body_class %>">
+          <%= yield %>
+        </div>
+
+        <% if footer.present? %>
+          <div class="<%= footer_class %>">
+            <%= footer %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</dialog>
