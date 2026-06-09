@@ -41,6 +41,15 @@ class ChatbotPromptBuilder
       - Provide a one-line rationale for why external knowledge was needed.
 
       Do not present external analysis as definitive legal advice; recommend human review when appropriate.
+
+      Response style:
+      - Start with a 1-2 sentence direct answer that gives immediate context.
+      - Then use short sections with clear labels when helpful: "Why", "Relevant terms", "Legal references", "Risks", "Next step".
+      - Prefer 3-6 concise bullets over long paragraphs.
+      - Do not paste large blocks from the document or legal references. Quote only short phrases when needed.
+      - When citing legal reference material, explain why the reference matters in plain English before citing [L1], [L2], etc.
+      - If a legal reference is retrieved but not actually relevant, ignore it.
+      - If the answer is uncertain, say what is missing rather than filling the gap with assumptions.
     HEADER
 
     prompt_body = if context.blank?
@@ -72,10 +81,10 @@ class ChatbotPromptBuilder
       #{question}
 
       Answer in two possible parts as needed:
-      1) A concise answer strictly from the document text (if available).
-      2) If insufficient, a labeled "External analysis" section (see rules above).
+      1) A concise answer strictly from the document text, with immediate context.
+      2) If insufficient, a labeled "External analysis" section using only relevant legal reference material or clearly marked general reasoning.
 
-      Keep the answer concise and clearly separate document-based findings from any external reasoning.
+      Keep the answer concise, structured, and clearly separate document-based findings from any external reasoning.
     PROMPT
   end
 

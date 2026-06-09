@@ -38,6 +38,9 @@ class ChatbotPromptBuilderTest < ActiveSupport::TestCase
 
     assert_includes prompt, "Use the document text provided below as the PRIMARY source."
     assert_includes prompt, "Do not treat conversation history as a source of document facts"
+    assert_includes prompt, "Start with a 1-2 sentence direct answer that gives immediate context."
+    assert_includes prompt, "Prefer 3-6 concise bullets over long paragraphs."
+    assert_includes prompt, "Do not paste large blocks from the document or legal references."
     assert_includes prompt, "No prior conversation."
   end
 
