@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_09_000200) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_09_000300) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -40,6 +40,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_09_000200) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "chat_message_legal_references", force: :cascade do |t|
+    t.bigint "chat_message_id", null: false
+    t.datetime "created_at", null: false
+    t.string "label", null: false
+    t.bigint "legal_source_chunk_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chat_message_id", "legal_source_chunk_id"], name: "index_chat_legal_refs_on_message_and_chunk", unique: true
+    t.index ["chat_message_id"], name: "index_chat_message_legal_references_on_chat_message_id"
+    t.index ["legal_source_chunk_id"], name: "index_chat_message_legal_references_on_legal_source_chunk_id"
   end
 
   create_table "chat_messages", force: :cascade do |t|
@@ -142,6 +153,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_09_000200) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "chat_message_legal_references", "chat_messages"
+  add_foreign_key "chat_message_legal_references", "legal_source_chunks"
   add_foreign_key "chat_messages", "packages"
   add_foreign_key "chat_messages", "users"
   add_foreign_key "clauses", "doc_files"

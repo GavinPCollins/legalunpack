@@ -132,6 +132,58 @@ class ChatbotSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal ["user", "assistant"], roles
   end
 
+  test "saves and returns legal references for assistant responses" do
+    @package.doc_files.create!(
+      extraction_status: "complete",
+      extracted_text: "The agreement discusses refunds for goods with major problems.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    source = LegalSource.create!(
+      title: "Refunds and returns",
+      jurisdiction: "VIC",
+      source_type: "regulator_guidance",
+      authority_level: "guidance",
+      publisher: "Consumer Affairs Victoria",
+      source_url: "https://www.consumer.vic.gov.au/refunds",
+      source_format: "html"
+    )
+    chunk = source.legal_source_chunks.create!(
+      heading: "Major problems",
+      content: "Consumers may be entitled to a refund when goods have a major problem.",
+      position: 1
+    )
+
+    captured_prompt = nil
+    original_ai_call = AiClient.method(:call)
+    original_retriever_call = LegalReferenceRetriever.method(:call)
+    LegalReferenceRetriever.define_singleton_method(:call) do |query:, **_options|
+      [ LegalReferenceRetriever::Result.new(number: 1, chunk: chunk) ]
+    end
+    AiClient.define_singleton_method(:call) do |prompt|
+      captured_prompt = prompt
+      "The refund term should be reviewed against [L1]."
+    end
+
+    assert_difference("ChatMessageLegalReference.count", 1) do
+      post package_chatbot_sessions_url(@package),
+           params: { question: "Does this handle refund major problems?", target: "package" },
+           as: :json
+    end
+
+    assert_response :success
+    json = JSON.parse(response.body)
+    assert_includes captured_prompt, "[L1] Refunds and returns | Major problems"
+    assert_equal "L1", json.dig("legal_references", 0, "label")
+    assert_equal "Refunds and returns", json.dig("legal_references", 0, "title")
+    assert_equal "Major problems", json.dig("legal_references", 0, "heading")
+    assert_equal "Consumer Affairs Victoria", json.dig("legal_references", 0, "publisher")
+    assert_includes json.dig("legal_references", 0, "content"), "major problem"
+    assert_equal json["legal_references"], json.dig("assistant_message", "legal_references")
+  ensure
+    AiClient.define_singleton_method(:call, original_ai_call) if original_ai_call
+    LegalReferenceRetriever.define_singleton_method(:call, original_retriever_call) if original_retriever_call
+  end
+
   test "returns stable response shape when external analysis is present" do
     @package.doc_files.create!(
       extraction_status: "complete",
