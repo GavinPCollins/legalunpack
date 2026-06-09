@@ -40,4 +40,33 @@ class ChatbotPromptBuilderTest < ActiveSupport::TestCase
     assert_includes prompt, "Do not treat conversation history as a source of document facts"
     assert_includes prompt, "No prior conversation."
   end
+
+  test "includes retrieved legal references as supporting context" do
+    source = LegalSource.create!(
+      title: "Refunds and returns",
+      jurisdiction: "VIC",
+      source_type: "regulator_guidance",
+      authority_level: "guidance",
+      publisher: "Consumer Affairs Victoria",
+      source_url: "https://www.consumer.vic.gov.au/refunds",
+      source_format: "html"
+    )
+    chunk = source.legal_source_chunks.create!(
+      heading: "Major problems",
+      content: "Consumers may be entitled to a refund when goods have a major problem.",
+      position: 1
+    )
+    reference = LegalReferenceRetriever::Result.new(number: 1, chunk: chunk)
+
+    prompt = ChatbotPromptBuilder.build(
+      @package,
+      question: "Does this mention refunds?",
+      legal_references: [ reference ]
+    )
+
+    assert_includes prompt, "Legal reference material:"
+    assert_includes prompt, "[L1] Refunds and returns | Major problems | Consumer Affairs Victoria | VIC | guidance"
+    assert_includes prompt, "Use it only when relevant, cite it as [L1], [L2]"
+    assert_includes prompt, "Consumers may be entitled to a refund"
+  end
 end

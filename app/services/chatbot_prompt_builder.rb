@@ -6,7 +6,7 @@ class ChatbotPromptBuilder
   # - target: "package" | "doc_file" | "clause"
   # - target_id: id for doc_file or clause when applicable
   # - history: previous ChatMessage records for follow-up context
-  def self.build(package, question:, target: "package", target_id: nil, history: []) # rubocop:disable Metrics/MethodLength,Metrics/PerceivedComplexity
+  def self.build(package, question:, target: "package", target_id: nil, history: [], legal_references: nil) # rubocop:disable Metrics/MethodLength,Metrics/PerceivedComplexity
     context_parts = []
 
     case target.to_s
@@ -33,6 +33,8 @@ class ChatbotPromptBuilder
 
       If the documents do NOT contain enough information to answer the question, first state exactly: "Insufficient document information to answer." Then, optionally provide an additional section titled "External analysis" where you MAY apply general legal principles or common practice to offer interpretation.
 
+      The legal reference material, if provided, is supporting context retrieved by the app. Use it only when relevant, cite it as [L1], [L2], etc., and never invent legislation, sections, regulators, or citations that are not shown there.
+
       In the "External analysis" section you MUST:
       - Clearly mark that the material is external to the package documents.
       - Give a confidence level (high / medium / low) for any external interpretation.
@@ -48,6 +50,8 @@ class ChatbotPromptBuilder
                   end
 
     history_body = history_prompt(history)
+    legal_references ||= LegalReferenceRetriever.call(query: question)
+    legal_references_body = legal_references_prompt(legal_references)
 
     <<~PROMPT
       #{header}
@@ -57,6 +61,9 @@ class ChatbotPromptBuilder
 
       Document text:
       #{prompt_body}
+
+      Legal reference material:
+      #{legal_references_body}
 
       Conversation history:
       #{history_body}
@@ -87,4 +94,26 @@ class ChatbotPromptBuilder
     lines.join("\n\n").truncate(6_000, separator: "\n\n")
   end
   private_class_method :history_prompt
+
+  def self.legal_references_prompt(legal_references)
+    references = Array(legal_references).first(5)
+    return "No legal reference material retrieved." if references.blank?
+
+    references.map do |reference|
+      source_parts = [
+        reference.title,
+        reference.heading,
+        reference.publisher,
+        reference.jurisdiction,
+        reference.authority_level
+      ].compact_blank
+
+      <<~REFERENCE.squish
+        [#{reference.label}] #{source_parts.join(" | ")}
+        Source: #{reference.source_url}
+        Text: #{reference.content.to_s.truncate(2_000, separator: " ")}
+      REFERENCE
+    end.join("\n\n")
+  end
+  private_class_method :legal_references_prompt
 end
