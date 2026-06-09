@@ -10,6 +10,12 @@ class AnalyzePackageFilesJob < ApplicationJob
 
       AnalyzeDocFileWithAi.save!(doc_file)
     rescue StandardError => error
+      doc_file.update_columns(
+        ai_status: "failed",
+        ai_error: error.message,
+        ai_processed_at: nil,
+        updated_at: Time.current
+      ) unless doc_file.destroyed?
       Rails.logger.warn("AI analysis failed for DocFile #{doc_file.id}: #{error.class} - #{error.message}")
     end
   end

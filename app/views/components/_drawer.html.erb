@@ -1,6 +1,7 @@
 <% controller = local_assigns.fetch(:controller) %>
 <% title = local_assigns.fetch(:title) %>
 <% title_id = local_assigns[:title_id] || "#{controller}-title" %>
+<% dialog_id = local_assigns[:dialog_id] %>
 <% subtitle = local_assigns[:subtitle] %>
 <% dialog_class = local_assigns[:dialog_class] || "search-drawer" %>
 <% shell_class = local_assigns[:shell_class] || "search-drawer-shell" %>
@@ -15,7 +16,7 @@
 <% footer = local_assigns[:footer] %>
 <% footer_class = local_assigns[:footer_class] || "search-drawer-footer" %>
 
-<dialog aria-labelledby="<%= title_id %>" class="<%= dialog_class %>" data-<%= controller %>-target="dialog">
+<dialog<%= " id=\"#{dialog_id}\"".html_safe if dialog_id.present? %> aria-labelledby="<%= title_id %>" class="<%= dialog_class %>" data-<%= controller %>-target="dialog">
   <div tabindex="0" class="<%= shell_class %>">
     <div class="<%= panel_class %>">
       <div class="<%= content_class %>">

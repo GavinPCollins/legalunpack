@@ -29,9 +29,9 @@
 <%# - Primary button (form)- %>
 <% primary_form_id = local_assigns[:primary_form_id] %>
 
-<% borderless_classes = "inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900" %>
-<% secondary_classes = "inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50" %>
-<% primary_classes = "inline-flex items-center justify-center rounded-md bg-cyan-950 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-900" %>
+<% borderless_classes = "btn" %>
+<% secondary_classes = "btn btn-secondary" %>
+<% primary_classes = "btn btn-primary" %>
 
 <%# ---- Back button ---- %>
 <header class="header-section">
@@ -67,7 +67,7 @@
           <% elsif borderless_method == :get %>
             <%= link_to borderless_label, borderless_path, class: borderless_classes %>
           <% else %>
-            <%= button_to borderless_label, borderless_path, method: borderless_method, class: "#{borderless_classes} border-0 bg-transparent", form_class: "inline-flex", form: borderless_form %>
+            <%= button_to borderless_label, borderless_path, method: borderless_method, class: borderless_classes, form_class: "inline-flex", form: borderless_form %>
           <% end %>
         <% end %>
 

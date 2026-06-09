@@ -1,0 +1,20 @@
+<li class="py-3">
+  <div class="flex min-w-0 items-start gap-3">
+      <span class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-cyan-50 text-cyan-800">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="size-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-5.1a2.25 2.25 0 0 0-.659-1.591l-3.9-3.9A2.25 2.25 0 0 0 13.35 3H6.75A2.25 2.25 0 0 0 4.5 5.25v13.5A2.25 2.25 0 0 0 6.75 21h10.5a2.25 2.25 0 0 0 2.25-2.25v-4.5Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 3.375V7.5A1.5 1.5 0 0 0 15 9h4.125" />
+          </svg>
+      </span>
+  <div class="min-w-0 flex-1">
+                <%= link_to(
+                      doc_file.file.attached? ? doc_file.file.filename.to_s : "Untitled file",
+                      summary_doc_file_path(doc_file),
+                      class: "block truncate text-sm font-semibold text-neutral-950 hover:text-cyan-800"
+                    ) %>
+                <p class="mt-1 text-xs <%= file_failed ? "text-red-700" : "text-neutral-500" %>">
+                  <%= file_failed ? "Needs attention" : (file_complete ? "Analysis complete" : "Processing") %>
+                </p>
+      </div>
+  </div>
+</li>

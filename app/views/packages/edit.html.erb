@@ -16,9 +16,9 @@
       </div>
 
       <div class="flex items-center justify-between gap-3">
-        <%= link_to "Cancel", package_path(@package), class: "rounded-md px-3 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-100" %>
-        <%= link_to "Open package page", package_path(@package, edit: "name", anchor: "package-name"), class: "rounded-md px-3 py-2 text-sm font-semibold text-cyan-800 hover:bg-cyan-50" %>
-        <%= form.submit "Save name", class: "rounded-md bg-cyan-950 px-4 py-2 text-sm font-semibold text-neutral-50 hover:bg-cyan-900" %>
+        <%= link_to "Cancel", package_path(@package), class: "btn" %>
+        <%= link_to "Open package page", package_path(@package, edit: "name", anchor: "package-name"), class: "btn btn-secondary" %>
+        <%= form.submit "Save name", class: "btn btn-primary" %>
       </div>
     <% end %>
   </div>
