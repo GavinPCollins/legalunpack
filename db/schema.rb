@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_08_005223) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_09_000200) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -84,6 +84,35 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_08_005223) do
     t.index ["package_id"], name: "index_doc_files_on_package_id"
   end
 
+  create_table "legal_source_chunks", force: :cascade do |t|
+    t.text "content", null: false
+    t.datetime "created_at", null: false
+    t.string "heading"
+    t.bigint "legal_source_id", null: false
+    t.integer "position", null: false
+    t.string "section_label"
+    t.datetime "updated_at", null: false
+    t.index ["legal_source_id", "position"], name: "index_legal_source_chunks_on_legal_source_id_and_position", unique: true
+    t.index ["legal_source_id"], name: "index_legal_source_chunks_on_legal_source_id"
+  end
+
+  create_table "legal_sources", force: :cascade do |t|
+    t.string "authority_level", null: false
+    t.string "citation"
+    t.datetime "created_at", null: false
+    t.datetime "imported_at"
+    t.string "jurisdiction", null: false
+    t.string "publisher"
+    t.text "raw_text"
+    t.string "source_format", null: false
+    t.string "source_type", null: false
+    t.string "source_url", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["jurisdiction", "source_type"], name: "index_legal_sources_on_jurisdiction_and_source_type"
+    t.index ["source_url"], name: "index_legal_sources_on_source_url", unique: true
+  end
+
   create_table "packages", force: :cascade do |t|
     t.string "category"
     t.datetime "created_at", null: false
@@ -118,5 +147,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_08_005223) do
   add_foreign_key "clauses", "doc_files"
   add_foreign_key "clauses", "packages"
   add_foreign_key "doc_files", "packages"
+  add_foreign_key "legal_source_chunks", "legal_sources"
   add_foreign_key "packages", "users"
 end
