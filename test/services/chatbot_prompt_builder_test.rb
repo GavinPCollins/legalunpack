@@ -42,6 +42,7 @@ class ChatbotPromptBuilderTest < ActiveSupport::TestCase
     assert_includes prompt, "Start with a 1-2 sentence direct answer that gives immediate context."
     assert_includes prompt, "Prefer 3-6 concise bullets over long paragraphs."
     assert_includes prompt, "Do not paste large blocks from the document or legal references."
+    assert_includes prompt, 'include a short "Legal references" section naming the relevant source title'
     assert_includes prompt, "No prior conversation."
   end
 

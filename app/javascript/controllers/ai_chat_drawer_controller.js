@@ -168,6 +168,11 @@ export default class extends Controller {
     text.textContent = message.content || ""
     bubble.appendChild(text)
 
+    if (!isUser) {
+      const references = this.referencesElement(message.legal_references || [])
+      if (references) bubble.appendChild(references)
+    }
+
     if (isUser) {
       wrapper.appendChild(bubble)
       wrapper.appendChild(avatar)
@@ -177,6 +182,56 @@ export default class extends Controller {
     }
 
     return wrapper
+  }
+
+  referencesElement(references) {
+    if (!references.length) return null
+
+    const wrapper = document.createElement("div")
+    wrapper.className = "ai-chat-references"
+
+    const heading = document.createElement("div")
+    heading.className = "ai-chat-references-heading"
+    heading.textContent = "References used"
+    wrapper.appendChild(heading)
+
+    references.forEach((reference) => {
+      const details = document.createElement("details")
+      details.className = "ai-chat-reference"
+
+      const summary = document.createElement("summary")
+      summary.className = "ai-chat-reference-summary"
+      summary.textContent = this.referenceTitle(reference)
+      details.appendChild(summary)
+
+      const meta = document.createElement("div")
+      meta.className = "ai-chat-reference-meta"
+      meta.textContent = [
+        reference.publisher,
+        reference.jurisdiction,
+        reference.authority_level
+      ].filter(Boolean).join(" | ")
+      if (meta.textContent) details.appendChild(meta)
+
+      const content = document.createElement("p")
+      content.className = "ai-chat-reference-content"
+      content.textContent = reference.content || ""
+      details.appendChild(content)
+
+      wrapper.appendChild(details)
+    })
+
+    return wrapper
+  }
+
+  referenceTitle(reference) {
+    const parts = [
+      `[${reference.label}]`,
+      reference.title,
+      reference.heading
+    ].filter(Boolean)
+
+    return parts.join(" ")
   }
 
   metaElement(message, isUser) {

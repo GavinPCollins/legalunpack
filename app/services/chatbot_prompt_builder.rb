@@ -47,6 +47,7 @@ class ChatbotPromptBuilder
       - Then use short sections with clear labels when helpful: "Why", "Relevant terms", "Legal references", "Risks", "Next step".
       - Prefer 3-6 concise bullets over long paragraphs.
       - Do not paste large blocks from the document or legal references. Quote only short phrases when needed.
+      - If legal reference material materially informs the answer, include a short "Legal references" section naming the relevant source title and citation label, for example: "[L1] Refunds and returns - explains when a refund remedy may apply."
       - When citing legal reference material, explain why the reference matters in plain English before citing [L1], [L2], etc.
       - If a legal reference is retrieved but not actually relevant, ignore it.
       - If the answer is uncertain, say what is missing rather than filling the gap with assumptions.
