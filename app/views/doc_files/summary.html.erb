@@ -1,79 +1,129 @@
 <%# CODEX file summary %>
+
 <% file_title = @doc_file.file.attached? ? @doc_file.file.filename.to_s : "Untitled file" %>
 <% summary_text = @doc_file.ai_summary.presence || "No AI summary saved yet." %>
 
 <div class="page-item" data-controller="summary-highlight">
-  <%= render "components/header_item",
+  <%= render "components/headers/header_item",
         item_title: "AI Summary for #{file_title}",
         item_subheader: "Package: #{@package.name.presence || "Untitled package"}",
         parent_label: "Back to package",
         parent_path: package_path(@package),
         search_path: summary_search_doc_files_path,
         search_name: :q,
-        search_placeholder: "Search AI summaries",
-        search_drawer_title: "Summary search",
+        search_placeholder: "Search in the file",
+        search_drawer_title: "Clause search",
         search_drawer_body: "Press Return to search AI summaries.",
         search_frame_id: "summary_search_results",
-        show_ai_chat: false %>
+        overflow_actions: [
+          { label: "Rename package", type: :button, data: { action: "modal#open", modal_dialog_param: "rename" } },
+          { label: "Add documents", type: :button, data: { action: "modal#open", modal_dialog_param: "documents" } },
+          {
+            label: "Delete package",
+            path: package_path(@package),
+            method: :delete,
+            danger: true,
+            form: { data: { turbo_confirm: "Delete #{@package.name.presence || "this package"}?" } }
+          }]
+ %>
 
-  <section class="content gap-6">
-    <article class="rounded-md border border-neutral-200 bg-white p-5">
-    <header class="border-b border-neutral-200 pb-4">
-      <h2 class="text-lg font-semibold text-neutral-950">
-        <%= @doc_file.file.attached? ? @doc_file.file.filename.to_s : "Untitled file" %>
-      </h2>
-
-      <p class="mt-1 text-sm text-neutral-600">
-        Extraction: <%= @doc_file.extraction_status %> |
-        AI: <%= @doc_file.ai_status %>
-      </p>
-    </header>
-
-    <% if @doc_file.ai_error.present? %>
-      <div class="mt-4 rounded-md border border-red-200 bg-red-50 p-3">
-        <p class="text-sm font-semibold text-red-700">AI error</p>
-        <pre class="mt-2 whitespace-pre-wrap text-sm text-red-700"><%= @doc_file.ai_error %></pre>
-      </div>
-    <% end %>
-
-    <div class="mt-4">
-      <h3 class="text-sm font-semibold text-neutral-950">File summary</h3>
-      <p class="mt-2 whitespace-pre-wrap text-sm text-neutral-700">
-        <% if @highlight_query.present? %>
-          <%= highlight(summary_text, @highlight_query, highlighter: '<mark class="rounded bg-cyan-50 px-0.5 font-semibold text-cyan-950" tabindex="-1" data-summary-highlight-target="match">\1</mark>') %>
-        <% else %>
-          <%= summary_text %>
-        <% end %>
-      </p>
-    </div>
-
-    <div class="mt-5">
-      <h3 class="text-sm font-semibold text-neutral-950">Clauses</h3>
+  <% file_panel = capture do %>
+    <div class="space-y-4 border-l border-neutral-200 pl-6">
+      <section class="rounded-md border border-neutral-200 bg-white p-4">
+        <h2 class="text-sm font-semibold text-neutral-950">File details</h2>
+        <dl class="mt-4 space-y-3 text-sm">
+          <div>
+            <dt class="font-medium text-neutral-950">Package</dt>
+            <dd class="mt-1 text-neutral-600"><%= @package.name.presence || "Untitled package" %></dd>
+          </div>
+          <div>
+            <dt class="font-medium text-neutral-950">Extraction</dt>
+            <dd class="mt-1 text-neutral-600"><%= @doc_file.extraction_status %></dd>
+          </div>
+          <div>
+            <dt class="font-medium text-neutral-950">AI status</dt>
+            <dd class="mt-1 text-neutral-600"><%= @doc_file.ai_status %></dd>
+          </div>
+          <div>
+            <dt class="font-medium text-neutral-950">Clauses</dt>
+            <dd class="mt-1 text-neutral-600"><%= @doc_file.clauses.count %></dd>
+          </div>
+        </dl>
+      </section>
 
       <% if @doc_file.clauses.any? %>
-        <ol class="mt-3 space-y-4">
-          <% @doc_file.clauses.sort_by { |clause| clause.position || 0 }.each do |clause| %>
-            <li class="rounded-md border border-neutral-200 p-4">
-              <p class="text-sm font-semibold text-neutral-950">
-                <%= clause.position %>. <%= clause.title.presence || "Untitled clause" %>
-              </p>
-
-              <p class="mt-1 text-sm text-neutral-600">
-                Risk: <%= clause.risk_level.presence || "not set" %>
-              </p>
-
-              <p class="mt-3 text-sm font-medium text-neutral-800">Summary</p>
-              <p class="mt-1 whitespace-pre-wrap text-sm text-neutral-700"><%= clause.summary.presence || "No summary saved." %></p>
-
-              <p class="mt-3 text-sm font-medium text-neutral-800">Content</p>
-              <pre class="mt-1 whitespace-pre-wrap text-sm text-neutral-700"><%= clause.content %></pre>
-            </li>
-          <% end %>
-        </ol>
-      <% else %>
-        <p class="mt-2 text-sm text-neutral-600">No clauses saved yet.</p>
+        <nav class="rounded-md border border-neutral-200 bg-white p-4" aria-label="Document clauses">
+          <h2 class="text-sm font-semibold text-neutral-950">Jump to clause</h2>
+          <ol class="mt-3 space-y-2 text-sm">
+            <% @doc_file.clauses.sort_by { |clause| clause.position || 0 }.each do |clause| %>
+              <li>
+                <a href="#clause-<%= clause.id %>" class="block text-cyan-800 hover:text-cyan-950">
+                  <%= clause.position %>. <%= clause.title.presence || "Untitled clause" %>
+                </a>
+              </li>
+            <% end %>
+          </ol>
+        </nav>
       <% end %>
     </div>
-    </article>
-  </section>
+  <% end %>
+
+  <%= render layout: "layouts/details_page", locals: { panel: file_panel } do %>
+    <section class="content">
+      <header class="border-b border-neutral-200 pb-4">
+        <h2 class="text-lg font-semibold text-neutral-950"><%= file_title %></h2>
+
+        <p class="mt-1 text-sm text-neutral-600">
+          Extraction: <%= @doc_file.extraction_status %> |
+          AI: <%= @doc_file.ai_status %>
+        </p>
+      </header>
+
+      <% if @doc_file.ai_error.present? %>
+        <div class="mt-4 rounded-md border border-red-200 bg-red-50 p-3">
+          <p class="text-sm font-semibold text-red-700">AI error</p>
+          <pre class="mt-2 whitespace-pre-wrap text-sm text-red-700"><%= @doc_file.ai_error %></pre>
+        </div>
+      <% end %>
+
+      <div class="mt-4">
+        <h3 class="text-sm font-semibold text-neutral-950">File summary</h3>
+        <p class="mt-2 whitespace-pre-wrap text-sm text-neutral-700">
+          <% if @highlight_query.present? %>
+            <%= highlight(summary_text, @highlight_query, highlighter: '<mark class="rounded bg-cyan-50 px-0.5 font-semibold text-cyan-950" tabindex="-1" data-summary-highlight-target="match">\1</mark>') %>
+          <% else %>
+            <%= summary_text %>
+          <% end %>
+        </p>
+      </div>
+
+      <div class="mt-5">
+        <h3 class="text-sm font-semibold text-neutral-950">Clauses</h3>
+
+        <% if @doc_file.clauses.any? %>
+          <ol class="mt-3 space-y-4">
+            <% @doc_file.clauses.sort_by { |clause| clause.position || 0 }.each do |clause| %>
+              <li id="clause-<%= clause.id %>" class="scroll-mt-8 rounded-md border border-neutral-200 p-4">
+                <p class="text-sm font-semibold text-neutral-950">
+                  <%= clause.position %>. <%= clause.title.presence || "Untitled clause" %>
+                </p>
+
+                <p class="mt-1 text-sm text-neutral-600">
+                  Risk: <%= clause.risk_level.presence || "not set" %>
+                </p>
+
+                <p class="mt-3 text-sm font-medium text-neutral-800">Summary</p>
+                <p class="mt-1 whitespace-pre-wrap text-sm text-neutral-700"><%= clause.summary.presence || "No summary saved." %></p>
+
+                <p class="mt-3 text-sm font-medium text-neutral-800">Content</p>
+                <pre class="mt-1 whitespace-pre-wrap text-sm text-neutral-700"><%= clause.content %></pre>
+              </li>
+            <% end %>
+          </ol>
+        <% else %>
+          <p class="mt-2 text-sm text-neutral-600">No clauses saved yet.</p>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
 </div>

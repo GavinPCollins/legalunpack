@@ -61,6 +61,13 @@
   } */
 }
 
+/* Right-side details panel card.
+   Used for compact sticky content such as the package Files panel. */
+.side-content {
+  @apply flex w-full flex-col rounded-lg bg-white p-5 text-cyan-950;
+  @apply border border-neutral-200 border-t-6 border-t-cyan-600;
+}
+
 /* << Form >> */
 .form {
   @apply grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6;

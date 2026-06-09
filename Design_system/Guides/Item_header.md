@@ -3,7 +3,7 @@
 Partial:
 
 ```erb
-<%= render "components/header_item",
+<%= render "components/headers/header_item",
       parent_label: "Packages",
       parent_path: packages_path,
       item_title: @package.name.presence || "Untitled package" %>
@@ -14,7 +14,7 @@ Partial:
 Use `parent_label` and `parent_path` when the item header should show a return link above the main header row.
 
 ```erb
-<%= render "components/header_item",
+<%= render "components/headers/header_item",
       parent_label: "Packages",
       parent_path: packages_path,
       item_title: @package.name.presence || "Untitled package" %>
@@ -25,7 +25,7 @@ Use `parent_label` and `parent_path` when the item header should show a return l
 Use `item_title` for the item or package name shown on the left side of the header. Use `item_subheader` for helper text below the heading.
 
 ```erb
-<%= render "components/header_item",
+<%= render "components/headers/header_item",
       item_title: @package.name.presence || "Untitled package",
       item_subheader: "Created #{ @package.created_at.to_fs(:long)}" %>
 ```
@@ -35,7 +35,7 @@ Use `item_title` for the item or package name shown on the left side of the head
 Use `badge_label` to show a badge next to the item title. The `badge` class is always included, and `badge_class` adds the item-specific style.
 
 ```erb
-<%= render "components/header_item",
+<%= render "components/headers/header_item",
       item_title: "Matter review",
       badge_label: "Open",
       badge_class: "badge-succsses" %>
@@ -46,7 +46,7 @@ Use `badge_label` to show a badge next to the item title. The `badge` class is a
 Use the search options when the item header search should point to a real page.
 
 ```erb
-<%= render "components/header_item",
+<%= render "components/headers/header_item",
       item_title: @package.name.presence || "Untitled package",
       search_path: packages_path,
       search_name: :q,
@@ -58,7 +58,7 @@ Use the search options when the item header search should point to a real page.
 The search form opens a drawer on submit by default. Use the drawer options to adjust its copy.
 
 ```erb
-<%= render "components/header_item",
+<%= render "components/headers/header_item",
       item_title: @package.name.presence || "Untitled package",
       search_drawer_title: "Search package",
       search_drawer_body: "Package search results will appear here." %>
@@ -67,7 +67,7 @@ The search form opens a drawer on submit by default. Use the drawer options to a
 Disable the drawer when the search form should submit normally.
 
 ```erb
-<%= render "components/header_item",
+<%= render "components/headers/header_item",
       item_title: @package.name.presence || "Untitled package",
       show_search_drawer: false %>
 ```
@@ -77,12 +77,12 @@ Disable the drawer when the search form should submit normally.
 The AI chat button shows by default. Leave out `ai_chat_path` while the feature is only a placeholder, or add a path once the chat page/action exists.
 
 ```erb
-<%= render "components/header_item",
+<%= render "components/headers/header_item",
       ai_chat_path: root_path %>
 ```
 
 ```erb
-<%= render "components/header_item",
+<%= render "components/headers/header_item",
       show_ai_chat: false %>
 ```
 
@@ -91,7 +91,7 @@ The AI chat button shows by default. Leave out `ai_chat_path` while the feature 
 Use `overflow_actions` to choose which items show in the overflow menu.
 
 ```erb
-<%= render "components/header_item",
+<%= render "components/headers/header_item",
       item_title: @package.name.presence || "Untitled package",
       overflow_actions: [
         { label: "Rename package", type: :button, data: { action: "modal#open", modal_dialog_param: "rename" } },

@@ -18,7 +18,7 @@ Usage notes for reusable view components.
 Partial:
 
 ```erb
-<%= render "components/header_main", page_header: "Search Packages" %>
+<%= render "components/headers/header_main", page_header: "Search Packages" %>
 ```
 
 ### Title Only
@@ -26,7 +26,7 @@ Partial:
 Use this when the page only needs a heading.
 
 ```erb
-<%= render "components/header_main",
+<%= render "components/headers/header_main",
       page_header: "Search Packages" %>
 ```
 
@@ -35,7 +35,7 @@ Use this when the page only needs a heading.
 Use `page_subheader` for a short description below the heading.
 
 ```erb
-<%= render "components/header_main",
+<%= render "components/headers/header_main",
       page_header: "Create Package",
       page_subheader: "Upload the legal files you want to review." %>
 ```
@@ -45,7 +45,7 @@ Use `page_subheader` for a short description below the heading.
 Use `back_label` and `back_path` when the page should show a back link above the heading.
 
 ```erb
-<%= render "components/header_main",
+<%= render "components/headers/header_main",
       page_header: @package.name.presence || "Package",
       back_label: "Back to packages",
       back_path: packages_path %>
@@ -62,7 +62,7 @@ The header supports three optional action button styles:
 Leave out any label/path pair when that button should not render.
 
 ```erb
-<%= render "components/header_main",
+<%= render "components/headers/header_main",
       page_header: "Page title",
       borderless_label: "Delete",
       borderless_path: package_path(@package),
@@ -94,7 +94,7 @@ Use `primary_type: :submit` when the primary header button should submit a form 
   - Example:
   ```erb
   <%= form_with model: @package, html: { multipart: true }, class: "upload-form", data: { controller: "file-upload" } do |form| %>
-  <%= render "components/header_main",
+  <%= render "components/headers/header_main",
         page_header: "New Package",
         borderless_label: "Reset",
         borderless_path: root_path,
@@ -105,7 +105,7 @@ Use `primary_type: :submit` when the primary header button should submit a form 
 * If the header is outside the form, add an id to the form and pass the same id as `primary_form_id`.
   - Example:
   ```erb
-  <%= render "components/header_main",
+  <%= render "components/headers/header_main",
         page_header: "New Package",
         borderless_label: "Reset",
         borderless_path: root_path,

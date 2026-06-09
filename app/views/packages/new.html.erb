@@ -1,6 +1,6 @@
 <div class="page-main">
   <%= form_with model: @package, html: { multipart: true }, class: "upload-form", data: { controller: "file-upload" } do |form| %>
-    <%= render "components/header_main",
+    <%= render "components/headers/header_main",
         page_header: "New Package",
         # page_subheader: "Find packages by package name or uploaded file name.",
         borderless_label: "Reset",
