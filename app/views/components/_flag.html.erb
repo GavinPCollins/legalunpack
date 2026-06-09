@@ -1,0 +1,30 @@
+<% status_classes = flag.resolved? ? "border-emerald-200 bg-emerald-50 text-emerald-950" : "border-amber-200 bg-amber-50 text-amber-950" %>
+<% badge_classes = flag.resolved? ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800" %>
+
+<li id="<%= dom_id(flag) %>" class="rounded-md border px-3 py-3 <%= status_classes %>">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div class="min-w-0">
+      <div class="flex flex-wrap items-center gap-2">
+        <p class="text-sm font-semibold"><%= flag.name %></p>
+        <span class="rounded-full px-2 py-0.5 text-xs font-semibold <%= badge_classes %>">
+          <%= flag.level.presence || "review" %>
+        </span>
+        <% if flag.resolved? %>
+          <span class="rounded-full bg-white/70 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+            Resolved
+          </span>
+        <% end %>
+      </div>
+
+      <% if flag.reason.present? %>
+        <p class="mt-1 text-sm leading-5"><%= flag.reason %></p>
+      <% end %>
+    </div>
+
+    <%= button_to flag.resolved? ? "Reopen" : "Resolve",
+          flag_path(flag),
+          method: :patch,
+          params: { flag: { resolved: !flag.resolved? } },
+          class: "inline-flex shrink-0 items-center justify-center rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-neutral-900 shadow-sm ring-1 ring-inset ring-black/10 hover:bg-neutral-50" %>
+  </div>
+</li>

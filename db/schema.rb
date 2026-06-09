@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_08_005223) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_09_091500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -84,6 +84,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_08_005223) do
     t.index ["package_id"], name: "index_doc_files_on_package_id"
   end
 
+  create_table "flags", force: :cascade do |t|
+    t.bigint "clause_id", null: false
+    t.datetime "created_at", null: false
+    t.string "level"
+    t.string "name", null: false
+    t.text "reason"
+    t.boolean "resolved", default: false, null: false
+    t.datetime "resolved_at"
+    t.datetime "updated_at", null: false
+    t.index ["clause_id"], name: "index_flags_on_clause_id"
+    t.index ["level"], name: "index_flags_on_level"
+    t.index ["resolved"], name: "index_flags_on_resolved"
+  end
+
   create_table "packages", force: :cascade do |t|
     t.string "category"
     t.datetime "created_at", null: false
@@ -118,5 +132,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_08_005223) do
   add_foreign_key "clauses", "doc_files"
   add_foreign_key "clauses", "packages"
   add_foreign_key "doc_files", "packages"
+  add_foreign_key "flags", "clauses"
   add_foreign_key "packages", "users"
 end

@@ -25,7 +25,7 @@ class DocFilesController < ApplicationController
     @doc_file = DocFile
                 .joins(:package)
                 .where(packages: { user_id: current_user.id })
-                .includes(:clauses, file_attachment: :blob, package: {})
+                .includes({ clauses: :flags }, file_attachment: :blob, package: {})
                 .find(params[:id])
     @package = @doc_file.package
     @highlight_query = params[:highlight].to_s.strip
@@ -79,7 +79,7 @@ class DocFilesController < ApplicationController
     return nil if @query.blank?
 
     package = current_user.packages
-                          .includes(:clauses, doc_files: { file_attachment: :blob })
+                          .includes({ clauses: :flags }, doc_files: { file_attachment: :blob })
                           .find(params[:package_id])
 
     if current_user.packages
