@@ -8,6 +8,7 @@ require "uri"
 class ImportLegalSourceFromUrl
   DEFAULT_CHUNK_SIZE = 3_000
   DEFAULT_CHUNK_OVERLAP = 300
+  MAX_REDIRECTS = 5
 
   def self.call(legal_source, http_client: Net::HTTP)
     new(legal_source, http_client: http_client).call
@@ -58,12 +59,20 @@ class ImportLegalSourceFromUrl
   def read_source
     return read_local_source if local_source?
 
-    fetch_url
+    fetch_url(URI.parse(legal_source.source_url))
   end
 
-  def fetch_url
-    uri = URI.parse(legal_source.source_url)
+  def fetch_url(uri, redirect_count = 0)
     response = http_client.get_response(uri)
+
+    if response.is_a?(Net::HTTPRedirection)
+      raise "Too many redirects for #{legal_source.source_url}" if redirect_count >= MAX_REDIRECTS
+
+      location = response["Location"].to_s
+      raise "Redirect response missing Location header for #{legal_source.source_url}" if location.blank?
+
+      return fetch_url(URI.join(uri, location), redirect_count + 1)
+    end
 
     raise "Legal source import failed: #{response.code} #{response.message}" unless response.is_a?(Net::HTTPSuccess)
 
