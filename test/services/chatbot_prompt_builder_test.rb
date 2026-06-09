@@ -33,10 +33,11 @@ class ChatbotPromptBuilderTest < ActiveSupport::TestCase
     assert_includes prompt, "Current question:\nWhen does it renew?"
   end
 
-  test "keeps document text as the primary source over history" do
+  test "uses document text and legal references while keeping history contextual" do
     prompt = ChatbotPromptBuilder.build(@package, question: "What is the lease term?")
 
-    assert_includes prompt, "Use the document text provided below as the PRIMARY source."
+    assert_includes prompt, "Use the document text and retrieved legal reference material together"
+    assert_includes prompt, "Treat the document text as the source for what the package says"
     assert_includes prompt, "Do not treat conversation history as a source of document facts"
     assert_includes prompt, "Start with a 1-2 sentence direct answer that gives immediate context."
     assert_includes prompt, "Prefer 3-6 concise bullets over long paragraphs."
@@ -69,7 +70,7 @@ class ChatbotPromptBuilderTest < ActiveSupport::TestCase
 
     assert_includes prompt, "Legal reference material:"
     assert_includes prompt, "[L1] Refunds and returns | Major problems | Consumer Affairs Victoria | VIC | guidance"
-    assert_includes prompt, "Use it only when relevant, cite it as [L1], [L2]"
+    assert_includes prompt, "Use it when it helps answer the question, cite it as [L1], [L2]"
     assert_includes prompt, "Consumers may be entitled to a refund"
   end
 end
