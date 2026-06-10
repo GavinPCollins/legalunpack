@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* Shared button foundation.
+   Use .btn alone for a borderless action. */
+.btn {
+  @apply inline-flex cursor-pointer items-center justify-center rounded-md border border-transparent px-3 py-2;
+  @apply text-sm font-semibold text-cyan-800 transition-colors;
+  @apply hover:bg-cyan-50 hover:text-cyan-950;
+  @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700;
+  @apply disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+/* Add when a button contains a leading or trailing icon. */
+.btn-icon {
+  @apply gap-1.5;
+}
+
+/* Filled, highest-emphasis action. */
+.btn-primary {
+  @apply border-cyan-950 bg-cyan-950 text-white;
+  @apply hover:border-cyan-900 hover:bg-cyan-900 hover:text-white;
+}
+
+/* Bordered, medium-emphasis action. */
+.btn-secondary {
+  @apply border-cyan-800 bg-transparent text-cyan-800;
+  @apply hover:border-cyan-950 hover:bg-cyan-50 hover:text-cyan-950;
+}

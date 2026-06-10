@@ -257,6 +257,35 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Sets a payment deadline."
   end
 
+  test "should mark unfinished files as processing when analysis starts" do
+    pending_doc_file = @package.doc_files.create!(
+      extraction_status: "complete",
+      extracted_text: "Ready to analyze.",
+      ai_status: "pending",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    complete_doc_file = @package.doc_files.create!(
+      extraction_status: "complete",
+      extracted_text: "Already analyzed.",
+      ai_status: "complete",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+
+    assert_enqueued_with(job: AnalyzePackageFilesJob, args: [ @package ]) do
+      post analyze_package_url(@package)
+    end
+
+    assert_redirected_to package_url(@package)
+    assert_equal "processing", pending_doc_file.reload.ai_status
+    assert_equal "complete", complete_doc_file.reload.ai_status
+
+    get package_url(@package)
+
+    assert_response :success
+    assert_includes response.body, "Analyzing file..."
+    assert_select "[data-controller~='package-status-poll'][data-package-status-poll-active-value='true']"
+  end
+
   test "should not get analysis for another user's package" do
     other_user = User.create!(email: "analysis-page-other@example.com", password: "password", username: "analysispageother")
     other_package = other_user.packages.create!(name: "Private analysis")

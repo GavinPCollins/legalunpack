@@ -44,7 +44,7 @@
 }
 
 .page-item {
-  @apply mx-4 w-auto;
+  @apply mx-8 w-auto;
 }
 
 /* Page header */
@@ -59,6 +59,13 @@
   /* h2{
     @apply;
   } */
+}
+
+/* Right-side details panel card.
+   Used for compact sticky content such as the package Files panel. */
+.side-content {
+  @apply flex w-full flex-col rounded-lg bg-white p-5 text-cyan-950;
+  @apply border border-neutral-200 border-t-6 border-t-cyan-600;
 }
 
 /* << Form >> */

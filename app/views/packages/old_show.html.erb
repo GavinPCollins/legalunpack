@@ -1,5 +1,5 @@
 <div class="page-item" data-controller="modal">
-  <%= render "components/header_main",
+  <%= render "components/headers/header_main",
         page_header: "#{@package.name.presence || "Untitled package"}",
         page_subheader: "Created #{ @package.created_at.to_fs(:long)}",
         # back_label: "Back to packages",
@@ -85,7 +85,7 @@
           </p>
         </div>
         <%# CODEX add document updates %>
-        <details class="relative shrink-0">
+        <details class="relative shrink-0" data-controller="menu">
           <summary role="button" class="cursor-pointer list-none rounded-md bg-cyan-950 px-4 py-2 text-sm font-semibold text-neutral-50 hover:bg-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 [&::-webkit-details-marker]:hidden">
             Add document
           </summary>

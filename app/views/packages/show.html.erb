@@ -1,5 +1,15 @@
-<div class="page-item" data-controller="modal">
-  <%= render "components/header_item",
+<% analysis_in_progress = @package.doc_files.any? { |doc_file| doc_file.ai_status == "processing" } %>
+
+<div id="package-dashboard-<%= @package.id %>"
+     class="page-item"
+     data-controller="modal clause-drawer package-status-poll"
+     data-package-status-poll-active-value="<%= analysis_in_progress %>"
+     data-package-status-poll-url-value="<%= package_path(@package) %>">
+  <%# ============================================================
+      PAGE HEADER
+      Package title, search, AI chat, and overflow actions.
+      ============================================================ %>
+  <%= render "components/headers/header_item",
         item_title: @package.name.presence || "Untitled package",
         item_subheader: "Created #{ @package.created_at.to_fs(:long)}",
         search_path: summary_search_doc_files_path,
@@ -21,11 +31,12 @@
             form: { data: { turbo_confirm: "Delete #{@package.name.presence || "this package"}?" } }
           }
         ] %>
-  <%#= render "components/header_main",
-        page_header: "#{@package.name.presence || "Untitled package"}",
-        page_subheader: "Created #{ @package.created_at.to_fs(:long)}" %>
+  <%# ======================== END PAGE HEADER ======================== %>
 
-  <%# ---- Rename modal dialog ---- %>
+  <%# ============================================================
+      RENAME PACKAGE MODAL
+      Opened from the page header overflow menu.
+      ============================================================ %>
   <div class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="rename-package-title" data-modal-target="dialog" data-modal-name="rename">
     <div class="fixed inset-0 bg-neutral-950/40" aria-hidden="true" data-action="click->modal#close" data-modal-dialog-param="rename"></div>
 
@@ -38,7 +49,7 @@
               <p class="mt-1 text-sm text-neutral-500">Update the package name shown throughout Legalunpack.</p>
             </div>
 
-            <button type="button" class="rounded-md px-2 py-1 text-sm font-semibold text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950" data-action="modal#close" data-modal-dialog-param="rename">
+            <button type="button" class="btn" data-action="modal#close" data-modal-dialog-param="rename">
               Close
             </button>
           </div>
@@ -55,19 +66,22 @@
             </div>
 
             <div class="flex items-center justify-end gap-3">
-              <button type="button" class="rounded-md px-3 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-100" data-action="modal#close" data-modal-dialog-param="rename">
+              <button type="button" class="btn" data-action="modal#close" data-modal-dialog-param="rename">
                 Cancel
               </button>
-              <%= form.submit "Save name", class: "rounded-md bg-cyan-950 px-4 py-2 text-sm font-semibold text-neutral-50 hover:bg-cyan-900" %>
+              <%= form.submit "Save name", class: "btn btn-primary" %>
             </div>
           <% end %>
         </div>
       </div>
     </div>
   </div>
-  <%# ---- End rename modal dialog ---- %>
+  <%# ==================== END RENAME PACKAGE MODAL =================== %>
 
-  <%# ---- Add documents modal dialog ---- %>
+  <%# ============================================================
+      ADD DOCUMENTS MODAL
+      Opened from the page header overflow menu.
+      ============================================================ %>
   <div class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="add-documents-title" data-modal-target="dialog" data-modal-name="documents">
     <div class="fixed inset-0 bg-neutral-950/40" aria-hidden="true" data-action="click->modal#close" data-modal-dialog-param="documents"></div>
 
@@ -80,7 +94,7 @@
               <p class="mt-1 text-sm text-neutral-500">Upload legal files to this package.</p>
             </div>
 
-            <button type="button" class="rounded-md px-2 py-1 text-sm font-semibold text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950" data-action="modal#close" data-modal-dialog-param="documents">
+            <button type="button" class="btn" data-action="modal#close" data-modal-dialog-param="documents">
               Close
             </button>
           </div>
@@ -90,7 +104,7 @@
             <div class="rounded-md border-2 border-dashed border-neutral-300 bg-neutral-50 p-6 text-center" data-file-upload-target="dropzone" data-action="dragover->file-upload#dragover drop->file-upload#drop">
               <p class="text-sm font-medium text-neutral-950">Drop files here</p>
               <p class="mt-1 text-xs text-neutral-500">PDF, DOCX, TXT, RTF</p>
-              <%= label_tag :package_document_files, "Select files", class: "mt-4 inline-flex cursor-pointer rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50" %>
+              <%= label_tag :package_document_files, "Select files", class: "btn btn-secondary mt-4" %>
               <%= file_field_tag "files[]",
                     id: "package_document_files",
                     multiple: true,
@@ -100,46 +114,357 @@
             </div>
             <ul class="space-y-2 text-left text-sm text-neutral-700" data-file-upload-target="list" aria-live="polite"></ul>
             <div class="flex justify-end">
-              <%= submit_tag "Upload", class: "rounded-md bg-cyan-950 px-4 py-2 text-sm font-semibold text-neutral-50 hover:bg-cyan-900" %>
+              <%= submit_tag "Upload", class: "btn btn-primary" %>
             </div>
           <% end %>
         </div>
       </div>
     </div>
   </div>
-  <%# ---- End add documents modal dialog ---- %>
+  <%# ==================== END ADD DOCUMENTS MODAL ==================== %>
 
-  <%# ---- Page content starts ---- %>
-  <section class="content gap-6">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h2 class="text-lg font-semibold text-neutral-950">Files</h2>
-        <p class="mt-1 text-sm text-neutral-500">
-          <%= pluralize(@package.doc_files.count, "uploaded file") %>
+  <%# ============================================================
+      NEED-ATTENTION DATA
+      A file needs attention when processing failed or it contains
+      at least one clause marked as high risk.
+      ============================================================ %>
+  <%
+    attention_files = @package.doc_files.select do |doc_file|
+      doc_file.extraction_status == "failed" ||
+        doc_file.ai_status == "failed" ||
+        doc_file.clauses.any? { |clause| clause.risk_level == "high" }
+    end
+
+    ordered_doc_files = @package.doc_files.sort_by { |doc_file| [doc_file.created_at, doc_file.id] }
+  %>
+  <%# ==================== END NEED-ATTENTION DATA ==================== %>
+
+  <%# ============================================================
+      RIGHT PANEL: FILES
+      Captured here, then passed into the details layout below.
+      This uses a compact row because the sticky panel is narrower
+      than the main content column.
+      ============================================================ %>
+  <% files_panel = capture do %>
+    <section class="side-content">
+
+      <%# SECTION HEADER %>
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-base font-semibold text-neutral-950">Files</h2>
+          <p class="mt-1 text-sm text-neutral-500">
+            <%= pluralize(@package.doc_files.count, "file") %>
+          </p>
+        </div>
+        <%# Header Actions %>
+        <div class="flex shrink-0 items-center">
+          <%= button_to analyze_package_path(@package),
+                method: :post,
+                class: "btn btn-icon" do %>
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 stroke-width="1.5"
+                 stroke="currentColor"
+                 aria-hidden="true"
+                 class="size-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+            </svg>
+            <span>Run analysis</span>
+          <% end %>
+        </div>
+      </div>
+
+      <% if @package.doc_files.any? %>
+        <ul role="list" class="mt-4 divide-y divide-neutral-200 border-y border-neutral-200">
+          <% ordered_doc_files.each do |doc_file| %>
+            <% file_failed = doc_file.extraction_status == "failed" || doc_file.ai_status == "failed" %>
+            <% file_complete = doc_file.ai_status == "complete" %>
+            <% file_processing = doc_file.ai_status == "processing" %>
+            <% file_analysis_failed = doc_file.ai_status == "failed" %>
+            <% file_name = doc_file.file.attached? ? doc_file.file.filename.to_s : "Untitled file" %>
+            <% high_risk_count = doc_file.clauses.count { |clause| clause.risk_level == "high" } %>
+
+<%# New Version %>
+  <li class="flex items-center justify-between gap-x-6 py-5">
+    <div class="min-w-0 flex-1">
+      <%# Upload date: top line. %>
+      <div class="mt-1 flex items-center gap-x-2 text-xs/5 text-gray-500 dark:text-gray-400">
+        <p class="whitespace-nowrap">
+          Uploaded <time datetime="<%= doc_file.created_at.iso8601 %>"><%= doc_file.created_at.to_date.to_fs(:long) %></time>
         </p>
       </div>
 
-      <div class="flex shrink-0 flex-wrap items-center gap-2">
-        <%= link_to "View analysis", analysis_package_path(@package), class: "rounded-md px-4 py-2 text-sm font-semibold text-cyan-800 hover:bg-cyan-50 hover:text-cyan-950" %>
-        <%= button_to "Analyze package", analyze_package_path(@package), method: :post, class: "rounded-md border border-cyan-800 px-4 py-2 text-sm font-semibold text-cyan-800 hover:bg-cyan-50 hover:text-cyan-950" %>
+      <%# Filename: middle line and link to the file summary page. %>
+      <div class="flex items-start gap-x-3">
+        <%= link_to(
+                        file_name,
+                        summary_doc_file_path(doc_file),
+                        class: "block truncate text-sm/6 font-semibold text-neutral-800 hover:text-cyan-800"
+                      ) %>
+        <%# <p class="mt-0.5 rounded-md bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700 inset-ring inset-ring-green-600/20 dark:bg-green-400/10 dark:text-green-400 dark:inset-ring-green-500/20">
+          Complete
+        </p> %>
+      </div>
+
+      <%# Analysis and risk status: bottom line. %>
+      <div class="mt-1 flex flex-wrap items-center gap-x-2 text-xs/5 text-neutral-500">
+        <% if file_processing %>
+          <span class="flex items-center gap-1.5 text-cyan-800">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="size-3.5 animate-spin">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" class="opacity-25" />
+              <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+            <span class="font-medium">Analyzing file...</span>
+          </span>
+        <% elsif file_analysis_failed %>
+          <span class="flex items-center gap-1.5 font-medium text-red-700">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 stroke-width="1.5"
+                 stroke="currentColor"
+                 aria-hidden="true"
+                 class="size-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+            <span>Analysis failed</span>
+          </span>
+        <% else %>
+          <span><%= file_complete ? "Analysed" : "Not analysed" %></span>
+        <% end %>
+
+        <% if file_complete && !file_processing %>
+          <svg viewBox="0 0 2 2" class="size-0.5 shrink-0 fill-current" aria-hidden="true">
+            <circle r="1" cx="1" cy="1" />
+          </svg>
+
+          <% if high_risk_count.positive? %>
+            <button type="button"
+                    class="flex shrink-0 items-center gap-1 rounded-md p-1 text-red-700 hover:bg-red-50 hover:text-red-900"
+                    title="<%= pluralize(high_risk_count, "risk") %> found"
+                    aria-label="View <%= pluralize(high_risk_count, "high-risk clause") %> for <%= file_name %>"
+                    data-action="clause-drawer#open"
+                    data-clause-drawer-dialog-param="<%= dom_id(doc_file, :package_risks) %>">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   fill="none"
+                   viewBox="0 0 24 24"
+                   stroke-width="1.5"
+                   stroke="currentColor"
+                   aria-hidden="true"
+                   class="size-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5" />
+              </svg>
+              <span class="text-xs font-semibold"><%= high_risk_count %></span>
+            </button>
+          <% else %>
+            <span class="flex shrink-0 items-center gap-1 text-green-700">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   fill="none"
+                   viewBox="0 0 24 24"
+                   stroke-width="1.5"
+                   stroke="currentColor"
+                   aria-hidden="true"
+                   class="size-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+              </svg>
+              <span class="font-medium">Looks good</span>
+            </span>
+          <% end %>
+        <% end %>
       </div>
     </div>
 
-    <% @package.errors[:base].each do |message| %>
-      <p class="text-sm text-red-600"><%= message %></p>
-    <% end %>
+    <%# Overflow action stays vertically centred at the right edge. %>
+    <div class="ml-auto flex flex-none items-center justify-end">
+      <details class="group relative" data-controller="menu">
+        <summary class="relative block cursor-pointer list-none rounded-md p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 [&::-webkit-details-marker]:hidden">
+          <span class="absolute -inset-2.5"></span>
+          <span class="sr-only">Open options for <%= file_name %></span>
+          <svg viewBox="0 0 20 20" fill="currentColor" data-slot="icon" aria-hidden="true" class="size-5">
+            <path d="M10 3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM10 8.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM11.5 15.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0Z" />
+          </svg>
+        </summary>
 
-    <% if @package.doc_files.any? %>
-      <ul role="list" class="divide-y divide-neutral-200 rounded-md border border-neutral-200">
-        <% @package.doc_files.each do |doc_file| %>
-          <%= render "components/doc_file", doc_file: doc_file %>
-        <% end %>
-      </ul>
-    <% else %>
-      <div class="rounded-md border border-dashed border-neutral-300 px-4 py-10 text-center">
-        <p class="text-sm font-medium text-neutral-950">No files uploaded yet</p>
-        <p class="mt-1 text-sm text-neutral-500">Use Add documents in the menu to upload legal files to this package.</p>
+        <div class="fixed z-50 w-36 rounded-md bg-white py-1 shadow-lg ring-1 ring-neutral-950/5"
+             data-menu-target="panel">
+          <%= link_to "Open",
+                summary_doc_file_path(doc_file),
+                class: "block px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950" %>
+
+          <% if doc_file.file.attached? %>
+            <%= link_to "Download",
+                  rails_blob_path(doc_file.file, disposition: "attachment"),
+                  class: "block px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950" %>
+          <% end %>
+
+          <%= button_to "Remove",
+                doc_file_path(doc_file),
+                method: :delete,
+                class: "block w-full px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50 hover:text-red-900",
+                form_class: "contents",
+                form: { data: { turbo_confirm: "Remove #{file_name} from this package?" } } %>
+        </div>
+      </details>
+    </div>
+  </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <div class="mt-4 rounded-md border border-dashed border-neutral-300 px-4 py-8 text-center">
+          <p class="text-sm font-medium text-neutral-950">No files uploaded</p>
+          <p class="mt-1 text-xs text-neutral-500">Add a document to begin reviewing this package.</p>
+        </div>
+      <% end %>
+
+      <%# Add-files action: centred below the file list or empty state. %>
+      <div class="mt-5 flex justify-center">
+        <button type="button"
+                class="btn btn-icon btn-secondary"
+                data-action="modal#open"
+                data-modal-dialog-param="documents">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               fill="none"
+               viewBox="0 0 24 24"
+               stroke-width="1.5"
+               stroke="currentColor"
+               aria-hidden="true"
+               class="size-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          <span>Add files</span>
+        </button>
       </div>
+    </section>
+  <% end %>
+  <%# ====================== END RIGHT PANEL: FILES =================== %>
+
+  <%# ============================================================
+      TWO-COLUMN DETAILS LAYOUT
+      Main content is on the left; the captured files panel is
+      sticky on the right at the xl breakpoint.
+      ============================================================ %>
+  <%= render layout: "layouts/details_page", locals: { panel: files_panel } do %>
+    <%# ==========================================================
+        LEFT SECTION: NEED ATTENTION
+        Shows package errors, failed files, and files containing
+        high-risk clauses.
+        ========================================================== %>
+    <section class="content gap-6">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-neutral-950">Need attention</h2>
+          <p class="mt-1 text-sm text-neutral-500">
+            Failed processing and high-risk clauses appear here.
+          </p>
+        </div>
+
+        <%# <div class="flex shrink-0 flex-wrap gap-2"> %>
+          <%#= link_to "View analysis", analysis_package_path(@package), class: "btn" %>
+        <%# </div> %>
+      </div>
+
+      <% @package.errors[:base].each do |message| %>
+        <div class="rounded-md border border-red-200 bg-red-50 p-4">
+          <p class="text-sm font-medium text-red-800"><%= message %></p>
+        </div>
+      <% end %>
+
+      <% if attention_files.any? %>
+        <ul role="list" class="space-y-3">
+          <% attention_files.each do |doc_file| %>
+            <% high_risk_count = doc_file.clauses.count { |clause| clause.risk_level == "high" } %>
+            <% processing_failed = doc_file.extraction_status == "failed" || doc_file.ai_status == "failed" %>
+
+            <li class="rounded-md border <%= processing_failed ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50" %> p-4">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-semibold text-neutral-950">
+                    <%= doc_file.file.attached? ? doc_file.file.filename.to_s : "Untitled file" %>
+                  </p>
+                  <p class="mt-1 text-sm <%= processing_failed ? "text-red-700" : "text-amber-800" %>">
+                    <% if processing_failed %>
+                      Document processing failed and may need to be retried.
+                    <% else %>
+                      <%= pluralize(high_risk_count, "high-risk clause") %> found.
+                    <% end %>
+                  </p>
+                </div>
+
+                <%= link_to "Review file",
+                      summary_doc_file_path(doc_file),
+                      class: "shrink-0 text-sm font-semibold text-cyan-800 hover:text-cyan-950" %>
+              </div>
+            </li>
+          <% end %>
+        </ul>
+      <% elsif @package.errors[:base].blank? %>
+        <div class="rounded-md border border-dashed border-neutral-300 px-4 py-12 text-center">
+          <p class="text-sm font-medium text-neutral-950">Nothing needs attention</p>
+          <p class="mt-1 text-sm text-neutral-500">Failed processing and high-risk clauses will appear here.</p>
+        </div>
+      <% end %>
+    </section>
+    <%# ================== END LEFT SECTION: NEED ATTENTION ============ %>
+
+    <%# ==========================================================
+        SMALL-SCREEN FILES SECTION
+        The details layout hides its right panel below xl, so the
+        same Files card is shown below Need attention instead.
+        ========================================================== %>
+    <div class="mt-8 xl:hidden">
+      <%= files_panel %>
+    </div>
+    <%# ================= END SMALL-SCREEN FILES SECTION =============== %>
+  <% end %>
+  <%# ================= END TWO-COLUMN DETAILS LAYOUT ================= %>
+
+  <%# ============================================================
+      HIGH-RISK CLAUSE DRAWERS
+      Rendered once per file outside the responsive Files card.
+      Both desktop and small-screen flag buttons open these drawers.
+      ============================================================ %>
+  <% @package.doc_files.each do |doc_file| %>
+    <% high_risk_clauses = doc_file.clauses.select { |clause| clause.risk_level == "high" } %>
+    <% next if high_risk_clauses.empty? %>
+
+    <%= render layout: "components/drawer",
+          locals: {
+            controller: "clause-drawer",
+            dialog_id: dom_id(doc_file, :package_risks),
+            title: "High-risk clauses",
+            title_id: dom_id(doc_file, :package_risks_title),
+            subtitle: doc_file.file.attached? ? doc_file.file.filename.to_s : "Untitled file",
+            dialog_class: "fixed inset-0 h-auto max-h-none w-auto max-w-none overflow-hidden bg-transparent backdrop:bg-transparent",
+            shell_class: "absolute inset-0 pl-10 focus:outline-none sm:pl-16",
+            panel_class: "ml-auto block h-full w-full max-w-2xl",
+            content_class: "relative flex h-full flex-col overflow-hidden bg-white px-4 py-6 shadow-xl sm:px-6",
+            header_class: "flex shrink-0 items-start justify-between gap-4",
+            title_class: "text-base font-semibold text-neutral-950",
+            close_wrap_class: "",
+            close_button_class: "relative rounded-md text-neutral-400 hover:text-neutral-600",
+            body_class: "mt-6 flex-1 overflow-y-auto"
+          } do %>
+      <ol class="space-y-4">
+        <% high_risk_clauses.sort_by { |clause| clause.position || 0 }.each do |clause| %>
+          <li class="rounded-md border border-red-200 bg-red-50 p-4">
+            <p class="text-sm font-semibold text-red-900">
+              <%= clause.position.present? ? "#{clause.position}. " : "" %><%= clause.title.presence || "Untitled clause" %>
+            </p>
+            <p class="mt-2 text-sm leading-6 text-red-800">
+              <%= clause.summary.presence || "No summary saved." %>
+            </p>
+
+            <% if clause.content.present? %>
+              <details class="mt-3">
+                <summary class="cursor-pointer text-xs font-semibold text-red-800 hover:text-red-950">View clause text</summary>
+                <pre class="mt-2 whitespace-pre-wrap text-xs leading-5 text-red-900"><%= clause.content %></pre>
+              </details>
+            <% end %>
+          </li>
+        <% end %>
+      </ol>
     <% end %>
-  </section>
+  <% end %>
+  <%# ================= END HIGH-RISK CLAUSE DRAWERS ================== %>
 </div>

@@ -70,6 +70,11 @@ class PackagesController < ApplicationController
   def analyze
     @package = current_user.packages.find(params[:id])
 
+    @package.doc_files.where.not(ai_status: "complete").update_all(
+      ai_status: "processing",
+      ai_error: nil,
+      updated_at: Time.current
+    )
     AnalyzePackageFilesJob.perform_later(@package)
 
     redirect_to @package, notice: "AI analysis started."
