@@ -13,8 +13,8 @@ gavin = User.find_or_initialize_by(email: "gavin@example.com")
 gavin.update!(
   name: "Gavin",
   username: "gavin",
-  password: "123456",
-  password_confirmation: "123456"
+  password: "111111",
+  password_confirmation: "111111"
 )
 
 halo = User.find_or_initialize_by(email: "halo@example.com")
