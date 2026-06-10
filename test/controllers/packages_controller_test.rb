@@ -257,6 +257,50 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "should show analysis task for uploaded files needing ai" do
+    @package.doc_files.create!(
+      extraction_status: "complete",
+      extracted_text: "Ready to analyze.",
+      ai_status: "pending",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    @package.doc_files.create!(
+      extraction_status: "pending",
+      ai_status: "pending",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+
+    get package_url(@package)
+
+    assert_response :success
+    assert_includes response.body, "Analysis required"
+    assert_includes response.body, "2 uploaded files require AI analysis."
+    assert_select "form[action='#{analyze_package_path(@package)}'][method='post'] button", text: "Run analysis"
+    assert_select "form[data-action='submit->package-status-poll#markAnalysisStarted']"
+    assert_select "p", text: "Nothing needs attention", count: 0
+  end
+
+  test "should not show analysis task for failed files" do
+    error_message = "Request body too large for gpt-4.1-mini model. Max size: 8000 tokens."
+    @package.doc_files.create!(
+      extraction_status: "complete",
+      extracted_text: "Could not analyze.",
+      ai_status: "failed",
+      ai_error: %(GitHub Models request failed: 413 {"message":"#{error_message}"}),
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+
+    get package_url(@package)
+
+    assert_response :success
+    assert_includes response.body, "Failed to analyse - sample.txt"
+    assert_includes response.body, "Reason:"
+    assert_includes response.body, error_message
+    assert_includes response.body, "Upload different file or call customer support"
+    assert_select "form[action='#{doc_file_path(@package.doc_files.first)}'][method='post'] button", text: "Delete file"
+    assert_select "h3", text: "Analysis required", count: 0
+  end
+
   test "should get analysis" do
     doc_file = @package.doc_files.create!(
       extraction_status: "complete",
@@ -309,6 +353,8 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Analyzing file..."
+    assert_select "[data-package-status-poll-target='analysisAction']", text: "Analyzing file..."
+    assert_select "[data-package-status-poll-target='analysisAction'] form[action='#{analyze_package_path(@package)}']", count: 0
     assert_select "[data-controller~='package-status-poll'][data-package-status-poll-active-value='true']"
   end
 

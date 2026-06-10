@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_10_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_10_100300) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -40,6 +40,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_10_090000) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "chat_message_legal_references", force: :cascade do |t|
+    t.bigint "chat_message_id", null: false
+    t.datetime "created_at", null: false
+    t.string "label", null: false
+    t.bigint "legal_source_chunk_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chat_message_id", "legal_source_chunk_id"], name: "index_chat_legal_refs_on_message_and_chunk", unique: true
+    t.index ["chat_message_id"], name: "index_chat_message_legal_references_on_chat_message_id"
+    t.index ["legal_source_chunk_id"], name: "index_chat_message_legal_references_on_legal_source_chunk_id"
   end
 
   create_table "chat_messages", force: :cascade do |t|
@@ -102,6 +113,35 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_10_090000) do
     t.index ["resolved"], name: "index_flags_on_resolved"
   end
 
+  create_table "legal_source_chunks", force: :cascade do |t|
+    t.text "content", null: false
+    t.datetime "created_at", null: false
+    t.string "heading"
+    t.bigint "legal_source_id", null: false
+    t.integer "position", null: false
+    t.string "section_label"
+    t.datetime "updated_at", null: false
+    t.index ["legal_source_id", "position"], name: "index_legal_source_chunks_on_legal_source_id_and_position", unique: true
+    t.index ["legal_source_id"], name: "index_legal_source_chunks_on_legal_source_id"
+  end
+
+  create_table "legal_sources", force: :cascade do |t|
+    t.string "authority_level", null: false
+    t.string "citation"
+    t.datetime "created_at", null: false
+    t.datetime "imported_at"
+    t.string "jurisdiction", null: false
+    t.string "publisher"
+    t.text "raw_text"
+    t.string "source_format", null: false
+    t.string "source_type", null: false
+    t.string "source_url"
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["jurisdiction", "source_type"], name: "index_legal_sources_on_jurisdiction_and_source_type"
+    t.index ["source_url"], name: "index_legal_sources_on_source_url", unique: true, where: "((source_url IS NOT NULL) AND ((source_url)::text <> ''::text))"
+  end
+
   create_table "packages", force: :cascade do |t|
     t.string "category"
     t.datetime "created_at", null: false
@@ -115,6 +155,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_10_090000) do
   end
 
   create_table "users", force: :cascade do |t|
+    t.boolean "admin", default: false, null: false
     t.datetime "created_at", null: false
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -131,11 +172,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_10_090000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "chat_message_legal_references", "chat_messages"
+  add_foreign_key "chat_message_legal_references", "legal_source_chunks"
   add_foreign_key "chat_messages", "packages"
   add_foreign_key "chat_messages", "users"
   add_foreign_key "clauses", "doc_files"
   add_foreign_key "clauses", "packages"
   add_foreign_key "doc_files", "packages"
   add_foreign_key "flags", "clauses"
+  add_foreign_key "legal_source_chunks", "legal_sources"
   add_foreign_key "packages", "users"
 end
