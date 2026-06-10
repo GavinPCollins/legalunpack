@@ -1,0 +1,111 @@
+<div class="page-main">
+  <%= form_with model: @legal_source, html: { multipart: true }, class: "form", data: { controller: "file-upload" } do |form| %>
+    <%= render "components/headers/header_main",
+          page_header: "Add Resource",
+          page_subheader: "Create a trusted legal source record from a URL or uploaded file.",
+          borderless_label: "Cancel",
+          borderless_path: legal_sources_path,
+          primary_label: "Add resource",
+          primary_type: :submit %>
+
+    <section class="content">
+      <div class="form">
+        <% if @legal_source.errors.any? %>
+          <div class="form-part">
+            <% @legal_source.errors.full_messages.each do |message| %>
+              <p class="form-error"><%= message %></p>
+            <% end %>
+          </div>
+        <% end %>
+
+        <div class="form-part">
+          <div class="field">
+            <%= form.label :title, "Resource title" %>
+            <%= form.text_field :title, class: "input-text", placeholder: "Residential Tenancies Act 1997" %>
+          </div>
+        </div>
+
+        <div class="form-part">
+          <div class="field">
+            <%= form.label :citation, "Citation" %>
+            <%= form.text_field :citation, class: "input-text", placeholder: "Authorised Version No. 111" %>
+          </div>
+        </div>
+
+        <div class="form-part">
+          <div class="field">
+            <%= form.label :publisher, "Publisher" %>
+            <%= form.text_field :publisher, class: "input-text", placeholder: "Victorian Legislation" %>
+          </div>
+        </div>
+
+        <div class="form-part">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="field">
+              <%= form.label :jurisdiction, "Jurisdiction" %>
+              <%= form.text_field :jurisdiction, class: "input-text", placeholder: "VIC" %>
+            </div>
+
+            <div class="field">
+              <%= form.label :source_format, "Format" %>
+              <%= form.select :source_format,
+                    LegalSource::SOURCE_FORMATS.map { |format| [format.upcase, format] },
+                    {},
+                    class: "input-text" %>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-part">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="field">
+              <%= form.label :source_type, "Source type" %>
+              <%= form.select :source_type,
+                    LegalSource::SOURCE_TYPES.map { |source_type| [source_type.humanize, source_type] },
+                    {},
+                    class: "input-text" %>
+            </div>
+
+            <div class="field">
+              <%= form.label :authority_level, "Authority level" %>
+              <%= form.select :authority_level,
+                    LegalSource::AUTHORITY_LEVELS.map { |authority| [authority.humanize, authority] },
+                    {},
+                    class: "input-text" %>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-part">
+          <div class="field">
+            <%= form.label :source_url, "Source URL" %>
+            <%= form.url_field :source_url, class: "input-text", placeholder: "https://..." %>
+          </div>
+        </div>
+
+        <div class="form-part">
+          <div class="field">
+            <label>Upload file</label>
+            <div class="file-dropzone" data-file-upload-target="dropzone" data-action="dragover->file-upload#dragover drop->file-upload#drop">
+              <div class="file-dropzone-content">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="file-upload-icon">
+                  <path d="M1.5 6a2.25 2.25 0 0 1 2.25-2.25h16.5A2.25 2.25 0 0 1 22.5 6v12a2.25 2.25 0 0 1-2.25 2.25H3.75A2.25 2.25 0 0 1 1.5 18V6Z" />
+                </svg>
+                <div class="file-upload-row">
+                  <%= form.label :source_file, "Select file", class: "special-label" %>
+                  <p>or drag and drop</p>
+                </div>
+                <p class="upload-help">Accepted file types: PDF, HTML, TXT.</p>
+                <%= form.file_field :source_file,
+                      class: "sr-only",
+                      accept: ".pdf,.html,.htm,.txt,application/pdf,text/html,text/plain",
+                      data: { file_upload_target: "input", action: "change->file-upload#select" } %>
+              </div>
+            </div>
+            <ul class="selected-files" data-file-upload-target="list" aria-live="polite"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  <% end %>
+</div>
