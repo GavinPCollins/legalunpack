@@ -46,11 +46,12 @@ Rails.application.configure do
   # Don't log any deprecations.
   config.active_support.report_deprecations = false
 
-  # Keep production deploys simple until a durable cache is needed.
-  config.cache_store = :memory_store
+  # Use database-backed caching in production.
+  config.cache_store = :solid_cache_store
 
-  # Run background jobs in-process until a durable job backend is configured.
-  config.active_job.queue_adapter = :async
+  # Use database-backed background jobs in production.
+  config.active_job.queue_adapter = :solid_queue
+  config.solid_queue.connects_to = { database: { writing: :queue } }
 
   # Ignore bad email addresses and do not raise email delivery errors.
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.
