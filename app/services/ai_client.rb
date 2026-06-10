@@ -44,9 +44,16 @@ class AiClient
       http.request(request)
     end
 
-    raise "GitHub Models request failed: #{response.code} #{response.body}" unless response.is_a?(Net::HTTPSuccess)
+    raise github_models_error_message(response) unless response.is_a?(Net::HTTPSuccess)
 
     response.body
+  end
+
+  def github_models_error_message(response)
+    parsed_error = JSON.parse(response.body)
+    parsed_error["message"] || parsed_error.dig("error", "message") || raise(KeyError)
+  rescue JSON::ParserError, KeyError
+    "GitHub Models request failed: #{response.code} #{response.body}"
   end
 
   # Allow model override through an argument or env var.

@@ -26,6 +26,33 @@ class AiClientTest < ActiveSupport::TestCase
     end
   end
 
+  test "uses response message for github model errors" do
+    response = Struct.new(:code, :body).new(
+      "413",
+      { message: "Request body too large for gpt-4.1-mini model. Max size: 8000 tokens." }.to_json
+    )
+
+    error_message = AiClient.new.send(:github_models_error_message, response)
+
+    assert_equal "Request body too large for gpt-4.1-mini model. Max size: 8000 tokens.", error_message
+  end
+
+  test "uses nested response message for github model errors" do
+    response = Struct.new(:code, :body).new(
+      "413",
+      {
+        error: {
+          code: "tokens_limit_reached",
+          message: "Request body too large for gpt-4.1-mini model. Max size: 8000 tokens."
+        }
+      }.to_json
+    )
+
+    error_message = AiClient.new.send(:github_models_error_message, response)
+
+    assert_equal "Request body too large for gpt-4.1-mini model. Max size: 8000 tokens.", error_message
+  end
+
   class FakeGitHubModelsClient
     attr_reader :parameters
 

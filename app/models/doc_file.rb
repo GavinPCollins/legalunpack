@@ -1,3 +1,4 @@
+require "json"
 require "pg_search/model"
 
 class DocFile < ApplicationRecord
@@ -48,7 +49,24 @@ class DocFile < ApplicationRecord
   # SET DEFAULT STATUS
   after_initialize :set_default_statuses, if: :new_record?
 
+  def processing_error_message
+    raw_error = ai_error.presence || extraction_error.presence
+    return if raw_error.blank?
+
+    parsed_error_message(raw_error) || raw_error
+  end
+
   private
+
+  def parsed_error_message(raw_error)
+    json_start = raw_error.index("{")
+    return if json_start.blank?
+
+    parsed_error = JSON.parse(raw_error[json_start..])
+    parsed_error["message"] || parsed_error.dig("error", "message")
+  rescue JSON::ParserError, KeyError
+    nil
+  end
 
   # VALIDATE FILE TYPE
   def file_content_type
