@@ -1,6 +1,7 @@
 <%# ---- Package ---- %>
 <% item_title = local_assigns[:item_title] || local_assigns[:package_name] %>
 <% item_subheader = local_assigns[:item_subheader] || local_assigns[:item_subtitle] %>
+<% item_title_icon = local_assigns[:item_title_icon] %>
 
 <%# ---- Badge ---- %>
 <% badge_label = local_assigns[:badge_label] %>
@@ -9,6 +10,7 @@
 <%# ---- Parent ---- %>
 <% parent_label = local_assigns[:parent_label] %>
 <% parent_path = local_assigns[:parent_path] %>
+<% breadcrumbs = local_assigns[:breadcrumbs] || [] %>
 
 <%# ---- Search ---- %>
 <% search_path = local_assigns[:search_path] || "#" %>
@@ -22,6 +24,7 @@
 <% search_frame_content = local_assigns[:search_frame_content] %>
 <% search_drawer_title = local_assigns[:search_drawer_title] || "Search" %>
 <% search_drawer_body = local_assigns[:search_drawer_body] || "Search results will appear here." %>
+<% show_search = local_assigns.fetch(:show_search, true) %>
 <% show_search_drawer = local_assigns.fetch(:show_search_drawer, true) %>
 
 <%# ---- AI chat ---- %>
@@ -37,7 +40,7 @@
 <% overflow_actions = local_assigns[:overflow_actions] || [] %>
 
 <% header_controllers = [] %>
-<% header_controllers << "search-drawer" if show_search_drawer %>
+<% header_controllers << "search-drawer" if show_search && show_search_drawer %>
 <% header_controllers << "ai-chat-drawer" if show_ai_chat && ai_chat_path.blank? %>
 <% header_data = {} %>
 <% header_data[:"ai-chat-drawer-url-value"] = ai_chat_url if ai_chat_url.present? %>
@@ -45,7 +48,9 @@
 <%= tag.header class: "item-header",
       data: header_data.merge(header_controllers.any? ? { controller: header_controllers.join(" ") } : {}) do %>
   <div class="item-header-frame">
-    <% if parent_label.present? && parent_path.present? %>
+    <% if breadcrumbs.any? %>
+      <%= render "components/headers/breadcrumbs", breadcrumbs: breadcrumbs %>
+    <% elsif parent_label.present? && parent_path.present? %>
       <div class="item-header-parent">
         <%= link_to parent_path, class: "item-header-parent-link" do %>
           <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="size-4">
@@ -56,16 +61,22 @@
       </div>
     <% end %>
 
-    <div class="item-header-inner">
+    <div class="<%= class_names("item-header-inner", "item-header-inner-no-search": !show_search) %>">
     <%# ---- Package details ---- %>
     <div class="item-header-title">
       <% if item_title.present? %>
         <div class="item-header-title-row">
-          <h1><%= item_title %></h1>
+          <h1 class="flex items-center gap-2">
+            <% if item_title_icon.present? %>
+              <span class="flex shrink-0 items-center" aria-hidden="true"><%= item_title_icon %></span>
+            <% end %>
+            <span class="min-w-0 break-words"><%= item_title %></span>
+          </h1>
           <% if badge_label.present? %>
-            <span class="<%= class_names("badge", badge_class) %>">
-              <%= badge_label %>
-            </span>
+            <%= render "components/badge",
+                  label: badge_label,
+                  variant: (badge_class.present? ? nil : :neutral),
+                  class: badge_class %>
           <% end %>
         </div>
 
@@ -76,54 +87,51 @@
     </div>
 
     <%# ---- Search form ---- %>
-    <%= form_with url: search_path,
-          method: search_method,
-          class: "item-search",
-          data: (show_search_drawer ? { action: "submit->search-drawer#open", turbo_frame: search_frame_id }.compact : {}) do %>
-      <% search_params.each do |name, value| %>
-        <%= hidden_field_tag name, value %>
-      <% end %>
+    <% if show_search %>
+      <%= form_with url: search_path,
+            method: search_method,
+            class: "item-search",
+            data: (show_search_drawer ? { action: "submit->search-drawer#open", turbo_frame: search_frame_id }.compact : {}) do %>
+        <% search_params.each do |name, value| %>
+          <%= hidden_field_tag name, value %>
+        <% end %>
 
-      <%= search_field_tag search_name,
-            search_value,
-            placeholder: search_placeholder,
-            aria: { label: search_label },
-            class: "search-field",
-            data: (show_search_drawer ? { search_drawer_target: "query" } : {}) %>
-      <svg viewBox="0 0 20 20" fill="currentColor" data-slot="icon" aria-hidden="true" class="mx-2 pointer-events-none col-start-1 row-start-1 size-5 self-center text-gray-400">
-        <path d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd" fill-rule="evenodd" />
-      </svg>
+        <%= search_field_tag search_name,
+              search_value,
+              placeholder: search_placeholder,
+              aria: { label: search_label },
+              class: "search-field",
+              data: (show_search_drawer ? { search_drawer_target: "query" } : {}) %>
+        <svg viewBox="0 0 20 20" fill="currentColor" data-slot="icon" aria-hidden="true" class="mx-2 pointer-events-none col-start-1 row-start-1 size-5 self-center text-gray-400">
+          <path d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd" fill-rule="evenodd" />
+        </svg>
+      <% end %>
     <% end %>
 
     <div class="item-header-actions">
-
-      <%# ---- Desktop separator ---- %>
-      <%# <div aria-hidden="true" class="item-header-desktop-separator"></div> %>
-
-     <div class="bar-right-section">
-
-      <%# ---- AI chat button ---- %>
-      <% if show_ai_chat %>
-        <% if ai_chat_path.present? %>
-          <%= link_to ai_chat_path, class: "item-header-icon-button" do %>
-            <span class="sr-only"><%= ai_chat_label %></span>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" class="size-6">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 0 1 .778-.332 48.294 48.294 0 0 0 5.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
-            </svg>
+      <div class="bar-right-section">
+        <%# ---- AI chat button ---- %>
+        <% if show_ai_chat %>
+          <% if ai_chat_path.present? %>
+            <%= link_to ai_chat_path, class: "item-header-icon-button" do %>
+              <span class="sr-only"><%= ai_chat_label %></span>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" class="size-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 0 1 .778-.332 48.294 48.294 0 0 0 5.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+              </svg>
+            <% end %>
+          <% else %>
+            <button type="button" class="item-header-icon-button" data-action="ai-chat-drawer#open">
+              <span class="sr-only"><%= ai_chat_label %></span>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" class="size-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 0 1 .778-.332 48.294 48.294 0 0 0 5.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+              </svg>
+            </button>
           <% end %>
-        <% else %>
-          <button type="button" class="item-header-icon-button" data-action="ai-chat-drawer#open">
-            <span class="sr-only"><%= ai_chat_label %></span>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" class="size-6">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 0 1 .778-.332 48.294 48.294 0 0 0 5.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
-            </svg>
-          </button>
         <% end %>
-      <% end %>
 
-      <%# ---- dropdown ---- %>
-      <% if overflow_actions.any? %>
-      <details class="item-header-overflow" data-controller="menu">
+        <%# ---- dropdown ---- %>
+        <% if overflow_actions.any? %>
+          <details class="item-header-overflow" data-controller="menu">
           <summary class="item-header-overflow-button">
             <span class="sr-only"><%= overflow_label %></span>
             <svg viewBox="0 0 20 20" fill="currentColor" data-slot="icon" aria-hidden="true" class="size-5">
@@ -153,14 +161,14 @@
               <% end %>
             </div>
           </div>
-      </details>
-      <% end %>
-     </div>
+          </details>
+        <% end %>
+      </div>
     </div>
     </div>
   </div>
 
-  <% if show_search_drawer %>
+  <% if show_search && show_search_drawer %>
     <%= render layout: "components/drawer",
           locals: {
             controller: "search-drawer",

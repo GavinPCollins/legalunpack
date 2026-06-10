@@ -31,6 +31,18 @@ class DocFilesController < ApplicationController
     @highlight_query = params[:highlight].to_s.strip
   end
 
+  def flags
+    @doc_file = DocFile
+                .joins(:package)
+                .where(packages: { user_id: current_user.id })
+                .includes({ clauses: :flags }, file_attachment: :blob, package: {})
+                .find(params[:id])
+    @package = @doc_file.package
+    @clauses = @doc_file.clauses
+                        .select { |clause| clause.flags.any? }
+                        .sort_by { |clause| [clause.position || Float::INFINITY, clause.id] }
+  end
+
   # CODEX file summary updates
   def summary_search
     @query = params[:q].to_s.strip
