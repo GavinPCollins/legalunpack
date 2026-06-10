@@ -48,6 +48,16 @@
                     </p>
                     <p class="mt-3 text-sm font-medium text-neutral-800">Summary</p>
                     <p class="mt-1 whitespace-pre-wrap text-sm text-neutral-700"><%= clause.summary.presence || "No summary saved." %></p>
+                    <% if clause.flags.any? %>
+                      <div class="mt-4">
+                        <p class="text-sm font-medium text-neutral-800">Flags</p>
+                        <ol class="mt-2 space-y-2">
+                          <% clause.flags.sort_by { |flag| [ flag.resolved? ? 1 : 0, flag.created_at || Time.current ] }.each do |flag| %>
+                            <%= render "components/flag", flag: flag %>
+                          <% end %>
+                        </ol>
+                      </div>
+                    <% end %>
                     <p class="mt-3 text-sm font-medium text-neutral-800">Content</p>
                     <pre class="mt-1 whitespace-pre-wrap text-sm text-neutral-700"><%= clause.content %></pre>
                   </li>

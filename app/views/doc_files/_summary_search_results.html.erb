@@ -10,7 +10,7 @@
     <ul class="mt-4 divide-y divide-neutral-200 rounded-md border border-neutral-200 bg-white">
       <% doc_files.each do |doc_file| %>
         <li>
-          <%= link_to summary_doc_file_path(doc_file, highlight: query), class: "block px-4 py-4 transition hover:bg-cyan-50", data: { turbo_frame: "_top" } do %>
+          <%= link_to summary_doc_file_path(doc_file, highlight: query, anchor: "file-summary"), class: "block px-4 py-4 transition hover:bg-cyan-50", data: { turbo_frame: "_top" } do %>
             <div class="flex items-start justify-between gap-4">
               <div class="min-w-0">
                 <p class="truncate text-sm font-semibold text-neutral-950">

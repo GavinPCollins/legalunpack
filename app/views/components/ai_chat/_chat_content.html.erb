@@ -25,13 +25,15 @@
 ] %>
 
 <% drawer_footer = capture do %>
-  <form class="ai-chat-form">
+  <form class="ai-chat-form" data-action="submit->ai-chat-drawer#submit">
     <label class="sr-only" for="ai-chat-drawer-message">Ask AI</label>
     <textarea id="ai-chat-drawer-message"
               rows="2"
               placeholder="Ask about this package"
-              class="ai-chat-input"></textarea>
-    <button type="button" class="ai-chat-submit">
+              class="ai-chat-input"
+              data-ai-chat-drawer-target="input"
+              data-action="keydown->ai-chat-drawer#submitOnEnter"></textarea>
+    <button type="submit" class="ai-chat-submit" data-ai-chat-drawer-target="submitButton">
       Ask
     </button>
   </form>
@@ -44,7 +46,7 @@
         title_id: "ai-chat-drawer-title",
         footer: drawer_footer
       } do %>
-  <div class="ai-chat-thread" aria-live="polite">
+  <div class="ai-chat-thread" aria-live="polite" data-ai-chat-drawer-target="thread">
     <% messages.each do |message| %>
       <%= render partial: message.fetch(:partial), locals: message.fetch(:locals, {}) %>
     <% end %>

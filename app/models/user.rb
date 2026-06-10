@@ -10,6 +10,7 @@ class User < ApplicationRecord
 
   has_many :packages, dependent: :destroy
   has_many :chats, through: :packages
+  has_many :chat_messages, dependent: :destroy
 
   def login
     @login || username || email

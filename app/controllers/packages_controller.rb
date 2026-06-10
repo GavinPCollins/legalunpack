@@ -6,13 +6,15 @@ class PackagesController < ApplicationController
   end
 
   def show
-    @package = current_user.packages.includes(doc_files: [ :clauses, { file_attachment: :blob } ]).find(params[:id])
+    @package = current_user.packages
+                           .includes(doc_files: [{ clauses: :flags }, { file_attachment: :blob }])
+                           .find(params[:id])
     enqueue_text_extraction_if_needed(@package)
   end
 
   def analysis
     @package = current_user.packages
-                           .includes(doc_files: [ :clauses, { file_attachment: :blob } ])
+                           .includes(doc_files: [{ clauses: :flags }, { file_attachment: :blob }])
                            .find(params[:id])
   end
 
@@ -38,8 +40,8 @@ class PackagesController < ApplicationController
     ExtractPackageTextJob.perform_later(@package)
 
     redirect_to @package, notice: "Package created."
-  rescue ActiveRecord::RecordInvalid => error
-    add_child_record_errors(error.record)
+  rescue ActiveRecord::RecordInvalid => e
+    add_child_record_errors(e.record)
 
     render :new, status: :unprocessable_entity
   end
@@ -89,7 +91,7 @@ class PackagesController < ApplicationController
     return Package.none if @query.blank?
 
     current_user.packages
-                .search_by_name_filename_and_summary(@query)
+                .search_by_name_and_filename(@query)
                 .includes(doc_files: { file_attachment: :blob })
                 .order(created_at: :desc)
   end

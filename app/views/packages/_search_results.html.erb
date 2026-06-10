@@ -1,8 +1,7 @@
 <%# CODEX search function %>
 <div class="mt-6 border-t border-neutral-200 pt-5">
-  <div class="flex items-center justify-between gap-4 text-sm text-neutral-600">
+  <div class="text-sm text-neutral-600">
     <h2 class="text-sm font-semibold text-neutral-950">Results</h2>
-    <%= link_to "New package", new_package_path, class: "font-semibold text-cyan-800 hover:text-cyan-950", data: { turbo_frame: "_top" } %>
   </div>
 
   <% if packages.any? %>
@@ -12,15 +11,19 @@
           <%= link_to package_path(package), class: "block px-4 py-4 transition hover:bg-cyan-50", data: { turbo_frame: "_top" } do %>
             <div class="flex items-start justify-between gap-4">
               <div class="min-w-0">
-                <p class="truncate text-sm font-semibold text-neutral-950"><%= package.name.presence || "Untitled package" %></p>
+                <p class="truncate text-sm font-semibold text-neutral-950">
+                  <%= highlighted_search_text(package.name.presence || "Untitled package", query) %>
+                </p>
                 <% filenames = package.doc_files.filter_map { |doc_file| doc_file.file.filename.to_s if doc_file.file.attached? } %>
                 <% if filenames.any? %>
-                  <p class="mt-1 truncate text-sm text-neutral-500"><%= filenames.join(", ") %></p>
+                  <p class="mt-1 truncate text-sm text-neutral-500">
+                    <%= safe_join(filenames.map { |filename| highlighted_search_text(filename, query) }, ", ") %>
+                  </p>
                 <% else %>
                   <p class="mt-1 text-sm text-neutral-500">No files uploaded</p>
                 <% end %>
               </div>
-              <span class="shrink-0 text-sm font-semibold text-cyan-800">Open</span>
+              <span class="shrink-0 text-sm font-semibold text-cyan-800">Open package</span>
             </div>
           <% end %>
         </li>
@@ -29,7 +32,7 @@
   <% else %>
     <div class="mt-4 rounded-md border border-dashed border-neutral-300 px-4 py-10 text-center">
       <p class="text-sm font-medium text-neutral-950">No matching packages</p>
-      <p class="mt-1 text-sm text-neutral-500">Try a package name, uploaded file name, or AI summary.</p>
+      <p class="mt-1 text-sm text-neutral-500">Try a package name or uploaded file name.</p>
     </div>
   <% end %>
 </div>

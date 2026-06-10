@@ -5,7 +5,8 @@ Rails.application.routes.draw do
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
   # 7 CRUD routes for packages
-  resources :packages do # do opens block for nested routes
+  resources :packages do
+    resources :chatbot_sessions, only: [:index, :create]
     post :analyze, on: :member
     get :analysis, on: :member
   end
@@ -20,6 +21,7 @@ Rails.application.routes.draw do
     get :summary, on: :member
     get :summary_search, on: :collection
   end
+  resources :flags, only: [:update]
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
   # Can be used by load balancers and uptime monitors to verify that the app is live.

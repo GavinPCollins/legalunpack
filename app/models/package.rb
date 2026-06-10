@@ -9,13 +9,22 @@ class Package < ApplicationRecord
   has_many :doc_files, dependent: :destroy
   has_many :clauses, dependent: :destroy
   has_many :file_blobs, through: :doc_files, source: :file_blob
+  has_many :chat_messages, dependent: :destroy
 
   # CODEX search function updates
-  pg_search_scope :search_by_name_filename_and_summary,
+  pg_search_scope :search_by_name_and_filename,
                   against: :name,
                   associated_against: {
-                    file_blobs: :filename,
-                    doc_files: :ai_summary
+                    file_blobs: :filename
+                  },
+                  using: {
+                    tsearch: { prefix: true }
+                  }
+
+  pg_search_scope :search_by_ai_summary_and_clauses,
+                  associated_against: {
+                    doc_files: :ai_summary,
+                    clauses: %i[title content summary risk_level]
                   },
                   using: {
                     tsearch: { prefix: true }

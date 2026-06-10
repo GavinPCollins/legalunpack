@@ -28,6 +28,8 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "turbo-frame#package_search_results" do
       assert_select "p", text: "Court notice"
+      assert_select "mark", text: /Court/i
+      assert_select "span", text: "Open package"
       assert_select "p", text: "Lease review", count: 0
     end
   end
@@ -43,14 +45,15 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     assert_select "turbo-frame#package_search_results" do
       assert_select "p", text: "Employment contract"
       assert_select "p", text: "sample.txt"
+      assert_select "mark", text: /sample/i
+      assert_select "span", text: "Open package"
       assert_select "p", text: "Lease review", count: 0
     end
   end
 
   # CODEX search function updates
-  test "should search by uploaded file ai summary" do
-    package = @user.packages.create!(name: "Supplier agreement")
-    package.doc_files.create!(
+  test "should not search uploaded file ai summary" do
+    @user.packages.create!(name: "Supplier agreement").doc_files.create!(
       ai_summary: "This document explains indemnity obligations.",
       file: fixture_file_upload("sample.txt", "text/plain")
     )
@@ -59,13 +62,99 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "turbo-frame#package_search_results" do
-      assert_select "p", text: "Supplier agreement"
-      assert_select "p", text: "Lease review", count: 0
+      assert_select "p", text: "No matching packages"
+      assert_select "p", text: "Supplier agreement", count: 0
     end
   end
 
   # CODEX search function updates
-  test "should only search current user packages" do
+  test "should not search package metadata" do
+    @user.packages.create!(
+      name: "Matter folder",
+      category: "Tenancy",
+      overview: "Retail premises disclosure pack",
+      status: "reviewing"
+    )
+
+    get packages_url, params: { q: "disclosure" }
+
+    assert_response :success
+    assert_select "turbo-frame#package_search_results" do
+      assert_select "p", text: "No matching packages"
+      assert_select "p", text: "Matter folder", count: 0
+    end
+  end
+
+  # CODEX search function updates
+  test "should not search extracted file text" do
+    @user.packages.create!(name: "Lease evidence").doc_files.create!(
+      extracted_text: "The tenant must repair the air conditioner.",
+      extraction_status: "complete",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+
+    get packages_url, params: { q: "conditioner" }
+
+    assert_response :success
+    assert_select "turbo-frame#package_search_results" do
+      assert_select "p", text: "No matching packages"
+      assert_select "p", text: "Lease evidence", count: 0
+    end
+  end
+
+  # CODEX search function updates
+  test "should not search uploaded file ai micro summary" do
+    @user.packages.create!(name: "Vendor agreement").doc_files.create!(
+      ai_micro_summary: "Assignment consent required.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+
+    get packages_url, params: { q: "assignment" }
+
+    assert_response :success
+    assert_select "turbo-frame#package_search_results" do
+      assert_select "p", text: "No matching packages"
+      assert_select "p", text: "Vendor agreement", count: 0
+    end
+  end
+
+  # CODEX search function updates
+  test "should not search clause ai analysis" do
+    package = @user.packages.create!(name: "Risk review")
+    doc_file = package.doc_files.create!(file: fixture_file_upload("sample.txt", "text/plain"))
+    package.clauses.create!(
+      doc_file: doc_file,
+      title: "Make good",
+      content: "Tenant must reinstate the premises at expiry.",
+      risk_level: "high",
+      summary: "Creates a broad reinstatement obligation.",
+      position: 1
+    )
+
+    get packages_url, params: { q: "reinstatement" }
+
+    assert_response :success
+    assert_select "turbo-frame#package_search_results" do
+      assert_select "p", text: "No matching packages"
+      assert_select "p", text: "Risk review", count: 0
+    end
+  end
+
+  # CODEX search function updates
+  test "should keep results ordered by newest first" do
+    older_package = @user.packages.create!(name: "Repair older")
+    newer_package = @user.packages.create!(name: "Repair newer")
+    older_package.update!(created_at: 2.days.ago)
+    newer_package.update!(created_at: 1.day.ago)
+
+    get packages_url, params: { q: "repair" }
+
+    assert_response :success
+    assert response.body.index("Repair newer") < response.body.index("Repair older")
+  end
+
+  # CODEX search function updates
+  test "should not search another user's packages by name or filename" do
     other_user = User.create!(email: "other@example.com", password: "password", username: "other")
     other_package = other_user.packages.create!(name: "Private settlement")
     other_package.doc_files.create!(file: fixture_file_upload("sample.txt", "text/plain"))
@@ -79,11 +168,42 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # CODEX search function updates
+  test "should not search another user's uploaded filename" do
+    other_user = User.create!(email: "other-filename@example.com", password: "password", username: "otherfilename")
+    other_package = other_user.packages.create!(name: "Other package")
+    other_package.doc_files.create!(file: fixture_file_upload("sample.txt", "text/plain"))
+
+    get packages_url, params: { q: "sample" }
+
+    assert_response :success
+    assert_select "turbo-frame#package_search_results" do
+      assert_select "p", text: "Other package", count: 0
+      assert_select "p", text: "No matching packages"
+    end
+  end
+
+  # CODEX search function updates
+  test "should show no matches for another user's package names" do
+    other_user = User.create!(email: "private@example.com", password: "password", username: "private")
+    other_user.packages.create!(name: "Private settlement")
+
+    get packages_url, params: { q: "private" }
+
+    assert_response :success
+    assert_select "turbo-frame#package_search_results" do
+      assert_select "p", text: "No matching packages"
+      assert_select "p", text: "Private settlement", count: 0
+    end
+  end
+
   test "should get show" do
     get package_url(@package)
 
     assert_response :success
-    assert_select "form[action='#{package_path(@package)}'][method='post'] button", text: "Delete package", count: 2
+    assert_select "form[action='#{package_path(@package)}'][method='post'] button", text: "Delete package" do |buttons|
+      assert buttons.size >= 2, "expected at least 2 Delete package buttons, found #{buttons.size}"
+    end
   end
 
   test "should enqueue text extraction when opening package with unextracted files" do

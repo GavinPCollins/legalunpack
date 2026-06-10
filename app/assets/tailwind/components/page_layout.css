@@ -44,7 +44,7 @@
 }
 
 .page-item {
-  @apply mx-4 w-auto;
+  @apply mx-8 w-auto;
 }
 
 /* Page header */

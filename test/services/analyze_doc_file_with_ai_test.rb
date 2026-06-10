@@ -65,20 +65,30 @@ class AnalyzeDocFileWithAiTest < ActiveSupport::TestCase
           title: "Payment",
           content: "Payment is due within 14 days.",
           risk_level: "low",
-          summary: "Sets a short payment deadline."
+          summary: "Sets a short payment deadline.",
+          flags: [
+            {
+              name: "Clarify payment deadline",
+              reason: "The timeframe may require follow-up.",
+              level: "medium"
+            }
+          ]
         },
         {
           title: "Termination",
           content: "Either party may terminate with notice.",
           risk_level: "medium",
-          summary: "Allows termination after notice."
+          summary: "Allows termination after notice.",
+          flags: []
         }
       ]
     }.to_json
 
     stub_ai_response(raw_response) do
       assert_difference("Clause.count", 2) do
-        AnalyzeDocFileWithAi.save!(@doc_file)
+        assert_difference("Flag.count", 1) do
+          AnalyzeDocFileWithAi.save!(@doc_file)
+        end
       end
     end
 
@@ -89,9 +99,13 @@ class AnalyzeDocFileWithAiTest < ActiveSupport::TestCase
     assert_equal "low", first_clause.risk_level
     assert_equal "Sets a short payment deadline.", first_clause.summary
     assert_equal 1, first_clause.position
+    assert_equal "Clarify payment deadline", first_clause.flags.first.name
+    assert_equal "The timeframe may require follow-up.", first_clause.flags.first.reason
+    assert_equal "medium", first_clause.flags.first.level
     assert_equal "Termination", second_clause.title
     assert_equal "medium", second_clause.risk_level
     assert_equal 2, second_clause.position
+    assert_empty second_clause.flags
 
     @doc_file.reload
     assert_equal "complete", @doc_file.ai_status
