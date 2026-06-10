@@ -32,13 +32,13 @@ Use `item_title` for the item or package name shown on the left side of the head
 
 ### Badge
 
-Use `badge_label` to show a badge next to the item title. The `badge` class is always included, and `badge_class` adds the item-specific style.
+Use `badge_label` to show the shared badge component next to the item title. `badge_class` can add an item-specific style.
 
 ```erb
 <%= render "components/headers/header_item",
       item_title: "Matter review",
       badge_label: "Open",
-      badge_class: "badge-succsses" %>
+      badge_class: "badge-success" %>
 ```
 
 ### Search

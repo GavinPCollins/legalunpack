@@ -1,0 +1,62 @@
+<% file_title = @doc_file.file.attached? ? @doc_file.file.filename.to_s : "Untitled file" %>
+<% flag_count = @clauses.sum { |clause| clause.flags.size } %>
+<% flag_icon = capture do %>
+  <svg xmlns="http://www.w3.org/2000/svg"
+       fill="none"
+       viewBox="0 0 24 24"
+       stroke-width="1.5"
+       stroke="currentColor"
+       class="size-6 text-red-700">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5" />
+  </svg>
+<% end %>
+
+<div class="page-item">
+  <%= render "components/headers/header_item",
+        item_title: "Flags in #{file_title} file",
+        item_title_icon: flag_icon,
+        breadcrumbs: [
+          { label: @package.name.presence || "Untitled package", path: package_path(@package) },
+          { label: file_title, path: summary_doc_file_path(@doc_file) }
+        ],
+        show_search: false,
+        ai_chat_url: package_chatbot_sessions_path(@package) %>
+
+  <main class="mx-auto w-full max-w-7xl px-2 pb-8 pt-5 sm:px-3 lg:px-4">
+    <section class="content">
+      <div class="flex flex-wrap items-end justify-between gap-3 border-b border-neutral-200 pb-4">
+        <div>
+          <h2 class="text-lg font-semibold text-neutral-950"><%= pluralize(flag_count, "Flag") %></h2>
+        </div>
+      </div>
+
+      <% if @clauses.any? %>
+        <ol class="mt-6 space-y-6">
+          <% @clauses.each do |clause| %>
+            <li>
+              <div>
+                <p class="text-sm font-semibold text-neutral-950">
+                  <%= clause.position.present? ? "#{clause.position}. " : "" %><%= clause.title.presence || "Untitled clause" %>
+                </p>
+                <% if clause.summary.present? %>
+                  <p class="mt-1 text-sm leading-6 text-neutral-600"><%= clause.summary %></p>
+                <% end %>
+              </div>
+
+              <ol class="mt-3 space-y-3">
+                <% clause.flags.sort_by { |flag| [flag.resolved? ? 1 : 0, flag.created_at || Time.current, flag.id] }.each do |flag| %>
+                  <%= render "components/flag", flag: flag, file_name: file_title %>
+                <% end %>
+              </ol>
+            </li>
+          <% end %>
+        </ol>
+      <% else %>
+        <div class="mt-6 rounded-md border border-dashed border-neutral-300 px-4 py-12 text-center">
+          <p class="text-sm font-medium text-neutral-950">No flags in this file</p>
+          <p class="mt-1 text-sm text-neutral-500">Flags created during analysis will appear here.</p>
+        </div>
+      <% end %>
+    </section>
+  </main>
+</div>

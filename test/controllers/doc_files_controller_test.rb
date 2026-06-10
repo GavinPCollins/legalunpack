@@ -33,20 +33,22 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
       ai_micro_summary: "Payment obligations.",
       file: fixture_file_upload("sample.txt", "text/plain")
     )
-    doc_file.clauses.create!(
+    first_clause = doc_file.clauses.create!(
       package: @package,
       title: "Penalty",
       content: "Late payment attracts a severe penalty.",
       risk_level: "high",
       summary: "Creates a severe late-payment penalty."
     )
-    doc_file.clauses.create!(
+    second_clause = doc_file.clauses.create!(
       package: @package,
       title: "Indemnity",
       content: "The tenant indemnifies the landlord.",
       risk_level: "high",
       summary: "Creates a broad indemnity."
     )
+    first_clause.flags.create!(name: "Review penalty", level: "high")
+    second_clause.flags.create!(name: "Review indemnity", level: "medium")
 
     get doc_file_url(doc_file)
 
@@ -54,10 +56,10 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     assert_select "li#doc_file_#{doc_file.id}"
     assert_includes response.body, "sample.txt"
     assert_includes response.body, "Payment obligations."
-    assert_includes response.body, "2 high-risk clauses"
-    assert_includes response.body, "High-risk clauses"
-    assert_includes response.body, "Penalty"
-    assert_includes response.body, "Indemnity"
+    assert_includes response.body, "2 flags"
+    assert_select "a[href='#{flags_doc_file_path(doc_file)}']", text: "2 flags"
+    assert_select "span.pill.badge-success", text: "Complete"
+    assert_not_includes response.body, "High-risk clauses"
     assert_includes response.body, "Complete"
   end
 
@@ -107,9 +109,13 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     get summary_doc_file_url(doc_file)
 
     assert_response :success
-    assert_includes response.body, "AI Summary for"
-    assert_includes response.body, "sample.txt"
-    assert_includes response.body, "Lease review"
+    assert_select "h1", text: "sample.txt"
+    assert_not_includes response.body, "AI Summary for"
+    assert_select "nav[aria-label='Breadcrumb']" do
+      assert_select "a[href='#{package_path(@package)}']", text: "Lease review"
+      assert_select "[aria-current='page']", count: 0
+    end
+    assert_select ".item-header-title .subheader", count: 0
     assert_includes response.body, "This file sets payment obligations."
   end
 
@@ -131,6 +137,40 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "li##{dom_id(clause)}"
+    assert_not_includes response.body, "Risk:"
+  end
+
+  test "summary should show solid flag triggers beside flagged clauses" do
+    doc_file = @package.doc_files.create!(
+      ai_summary: "This file sets payment obligations.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    clause = doc_file.clauses.create!(
+      package: @package,
+      title: "Payment",
+      content: "Payment is due within 14 days.",
+      summary: "Sets a payment deadline.",
+      position: 1
+    )
+    clause.flags.create!(
+      name: "Confirm payment deadline",
+      level: "high",
+      category: "legal_review",
+      reason: "The deadline requires confirmation."
+    )
+
+    get summary_doc_file_url(doc_file)
+
+    assert_response :success
+    assert_select "li##{dom_id(clause)}" do
+      assert_select "button[aria-label='View flag: Confirm payment deadline']" do
+        assert_select "svg[fill='currentColor']"
+      end
+      assert_select "dialog[data-flag-drawer-target='dialog']" do
+        assert_select "h2", text: /Confirm payment deadline/
+        assert_select "p", text: "sample.txt"
+      end
+    end
   end
 
   test "should highlight requested clause text in summary" do
@@ -180,6 +220,84 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
+  test "should show all flags for current user doc file" do
+    doc_file = @package.doc_files.create!(
+      ai_status: "complete",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    low_risk_clause = doc_file.clauses.create!(
+      package: @package,
+      title: "Payment",
+      risk_level: "low",
+      position: 1
+    )
+    low_risk_clause.flags.create!(
+      name: "Clarify payment deadline",
+      level: "high",
+      category: "deadline",
+      reason: "The deadline may be too short.",
+      suggested_action: "Ask whether the deadline can be extended."
+    )
+    high_risk_clause = doc_file.clauses.create!(
+      package: @package,
+      title: "Indemnity",
+      risk_level: "high",
+      position: 2
+    )
+    high_risk_clause.flags.create!(name: "Review indemnity", level: "medium")
+
+    get flags_doc_file_url(doc_file)
+
+    assert_response :success
+    assert_select "h1", text: /Flags in sample\.txt file/
+    assert_select "h1 svg"
+    assert_select ".item-header-inner-no-search"
+    assert_select "h1 span.break-words", text: /Flags in sample\.txt file/
+    assert_select ".item-header-title .subheader", count: 0
+    assert_select "form.item-search", count: 0
+    assert_select "nav[aria-label='Breadcrumb']" do
+      assert_select "a[href='#{package_path(@package)}']", text: "Lease review"
+      assert_select "a[href='#{summary_doc_file_path(doc_file)}']", text: "sample.txt"
+      assert_select "[aria-current='page']", count: 0
+    end
+    assert_select "h2", text: "2 Flags"
+    assert_includes response.body, "Clarify payment deadline"
+    assert_includes response.body, "Review indemnity"
+    assert_select "button.btn", text: "See more", count: 2
+    assert_select "dialog[data-flag-drawer-target='dialog']", count: 2
+    assert_select "article" do
+      assert_select "h3", text: "Clarify payment deadline"
+      assert_select "h3 + span.pill.badge-danger", text: "High priority"
+      assert_select "p", text: /Deadline/
+      assert_select "p", text: /Open/
+      assert_select "p", text: /deadline may be too short/i, count: 0
+    end
+    assert_select "article", text: /Review indemnity/ do
+      assert_select "span.pill.badge-warning", text: "Medium priority"
+    end
+    assert_select "dialog", text: /Clarify payment deadline/ do
+      assert_select "h2", text: /Clarify payment deadline/
+      assert_select "h2 span.pill.badge-danger", text: "High priority"
+      assert_select "p", text: "sample.txt"
+      assert_select "h3", text: "Reason"
+      assert_select "p", text: "The deadline may be too short."
+      assert_select "h3", text: "Suggested action"
+      assert_select "p", text: "Ask whether the deadline can be extended."
+    end
+  end
+
+  test "should not show flags for another user's doc file" do
+    other_user = User.create!(email: "flags-other@example.com", password: "password", username: "flagsother")
+    other_package = other_user.packages.create!(name: "Private package")
+    other_doc_file = other_package.doc_files.create!(
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+
+    get flags_doc_file_url(other_doc_file)
+
+    assert_response :not_found
+  end
+
   test "should search current user ai summaries" do
     doc_file = @package.doc_files.create!(
       ai_summary: "This file sets payment obligations.",
@@ -213,6 +331,12 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
       summary: "Creates an air conditioner repair obligation.",
       position: 2
     )
+    clause.flags.create!(
+      name: "Confirm repair responsibility",
+      level: "high",
+      category: "legal_review",
+      reason: "The repair obligation may require legal review."
+    )
     other_package = @user.packages.create!(name: "Other repair package")
     other_package.doc_files.create!(
       extracted_text: "Repair obligations in another package.",
@@ -228,12 +352,20 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
       assert_select "summary", count: 0
       assert_select "p", text: "Clause 2 match"
       assert_select "p", text: "Creates an air conditioner repair obligation."
+      assert_select "span", text: "medium", count: 0
+      assert_select "button[aria-label='View flag: Confirm repair responsibility']" do
+        assert_select "svg[fill='currentColor']"
+      end
+      assert_select "dialog[data-flag-drawer-target='dialog']" do
+        assert_select "h2", text: /Confirm repair responsibility/
+        assert_select "p", text: "sample.txt"
+      end
       clause_path = summary_doc_file_path(doc_file, highlight: "repair", anchor: dom_id(clause))
       assert_select "a[href='#{clause_path}']", text: "Open clause"
       summary_path = summary_doc_file_path(doc_file, highlight: "repair", anchor: "file-summary")
       assert_select "a[href='#{summary_path}']" do
         assert_select "p", text: /AI summary match/
-        assert_select "span", text: "2 matches"
+        assert_select "span", text: /matches/, count: 0
       end
       assert_select "p", text: "Other repair package", count: 0
       assert_select "mark", text: /repair/i

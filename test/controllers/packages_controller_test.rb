@@ -206,6 +206,31 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "file flag icon links to the file flags page" do
+    doc_file = @package.doc_files.create!(
+      ai_status: "complete",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    clause = doc_file.clauses.create!(
+      package: @package,
+      title: "Payment",
+      risk_level: "low"
+    )
+    clause.flags.create!(name: "Clarify payment deadline", level: "high")
+
+    get package_url(@package)
+
+    assert_response :success
+    assert_select "a[href='#{flags_doc_file_path(doc_file)}']" do
+      assert_select "svg"
+      assert_select "span", text: "1"
+    end
+    assert_select "a[href='#{flags_doc_file_path(doc_file)}']", text: "Review flags"
+    assert_includes response.body, "1 flag found."
+    assert_not_includes response.body, "high-risk"
+    assert_select "dialog[id='#{dom_id(doc_file, :package_risks)}']", count: 0
+  end
+
   test "should enqueue text extraction when opening package with unextracted files" do
     @package.doc_files.create!(
       file: fixture_file_upload("sample.txt", "text/plain")
@@ -255,6 +280,7 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "This file sets payment obligations."
     assert_includes response.body, "Payment"
     assert_includes response.body, "Sets a payment deadline."
+    assert_not_includes response.body, "Risk:"
   end
 
   test "should mark unfinished files as processing when analysis starts" do
