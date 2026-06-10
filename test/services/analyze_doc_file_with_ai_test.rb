@@ -43,6 +43,8 @@ class AnalyzeDocFileWithAiTest < ActiveSupport::TestCase
     assert_equal "low", result.dig("clauses", 0, "risk_level")
     assert_equal true, captured_json_response
     assert_includes captured_prompt, "micro_summary"
+    assert_includes captured_prompt, "suggested_action"
+    assert_includes captured_prompt, "deadline|missing_information|negotiation_point"
     assert_includes captured_prompt, "Payment is due within 14 days."
   ensure
     AiClient.define_singleton_method(:call, original_ai_call) if original_ai_call
@@ -70,7 +72,9 @@ class AnalyzeDocFileWithAiTest < ActiveSupport::TestCase
             {
               name: "Clarify payment deadline",
               reason: "The timeframe may require follow-up.",
-              level: "medium"
+              level: "medium",
+              category: "deadline",
+              suggested_action: "Ask whether the payment deadline can be extended."
             }
           ]
         },
@@ -94,7 +98,7 @@ class AnalyzeDocFileWithAiTest < ActiveSupport::TestCase
 
     first_clause, second_clause = @doc_file.clauses.order(:position)
 
-    assert_equal [ first_clause, second_clause ], @package.clauses.order(:position).to_a
+    assert_equal [first_clause, second_clause], @package.clauses.order(:position).to_a
     assert_equal "Payment", first_clause.title
     assert_equal "low", first_clause.risk_level
     assert_equal "Sets a short payment deadline.", first_clause.summary
@@ -102,6 +106,8 @@ class AnalyzeDocFileWithAiTest < ActiveSupport::TestCase
     assert_equal "Clarify payment deadline", first_clause.flags.first.name
     assert_equal "The timeframe may require follow-up.", first_clause.flags.first.reason
     assert_equal "medium", first_clause.flags.first.level
+    assert_equal "deadline", first_clause.flags.first.category
+    assert_equal "Ask whether the payment deadline can be extended.", first_clause.flags.first.suggested_action
     assert_equal "Termination", second_clause.title
     assert_equal "medium", second_clause.risk_level
     assert_equal 2, second_clause.position

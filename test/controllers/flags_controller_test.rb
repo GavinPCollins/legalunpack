@@ -13,27 +13,38 @@ class FlagsControllerTest < ActionDispatch::IntegrationTest
       summary: "Creates a short payment deadline.",
       position: 1
     )
-    @flag = clause.flags.create!(name: "Clarify payment deadline", level: "high")
+    @flag = clause.flags.create!(
+      name: "Clarify payment deadline",
+      level: "high",
+      category: "deadline",
+      suggested_action: "Ask whether the deadline can be extended."
+    )
 
     sign_in @user
   end
 
   test "should resolve current user's flag" do
-    patch flag_url(@flag), params: { flag: { resolved: true } }
+    patch flag_url(@flag), params: { flag: { resolved: true, resolution_note: "Confirmed with the agent." } }
 
     assert_redirected_to package_path(@flag.clause.package)
     assert @flag.reload.resolved?
+    assert_equal "Confirmed with the agent.", @flag.resolution_note
     assert_not_nil @flag.resolved_at
   end
 
   test "should resolve current user's flag with turbo stream replacement" do
-    patch flag_url(@flag), params: { flag: { resolved: true } }, as: :turbo_stream
+    patch flag_url(@flag),
+          params: { flag: { resolved: true, resolution_note: "Added to negotiation list." } },
+          as: :turbo_stream
 
     assert_response :success
     assert @flag.reload.resolved?
     assert_select "turbo-stream[action='replace'][target='flag_#{@flag.id}']"
     assert_includes response.body, "Reopen"
     assert_includes response.body, "Resolved"
+    assert_includes response.body, "Deadline"
+    assert_includes response.body, "Suggested action"
+    assert_includes response.body, "Added to negotiation list."
   end
 
   test "should not update another user's flag" do

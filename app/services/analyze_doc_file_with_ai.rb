@@ -85,13 +85,19 @@ class AnalyzeDocFileWithAi
       clause.flags.create!(
         name: flag_data["name"],
         reason: flag_data["reason"],
-        level: flag_level(flag_data["level"])
+        level: flag_level(flag_data["level"]),
+        category: flag_category(flag_data["category"]),
+        suggested_action: flag_data["suggested_action"]
       )
     end
   end
 
   def flag_level(value)
     value if Flag::LEVELS.include?(value)
+  end
+
+  def flag_category(value)
+    value if Flag::CATEGORIES.include?(value)
   end
 
   def prompt
@@ -106,7 +112,15 @@ class AnalyzeDocFileWithAi
             "content": "string",
             "risk_level": "low|medium|high",
             "summary": "string",
-            "flags": [{ "name": "string", "reason": "string", "level": "low|medium|high" }]
+            "flags": [
+              {
+                "name": "string",
+                "reason": "string",
+                "level": "low|medium|high",
+                "category": "deadline|missing_information|negotiation_point|legal_review|document_check|commercial_decision|unclear_term",
+                "suggested_action": "string"
+              }
+            ]
           }
         ]
       }
@@ -119,6 +133,8 @@ class AnalyzeDocFileWithAi
 
       Add flags only where the clause requires a concrete follow-up action, clarification, deadline tracking, document check, review, or unresolved decision.
       Use flag level to describe the urgency or priority of that follow-up action.
+      Use flag category to describe the type of follow-up.
+      Use suggested_action to give the document owner one concrete next step.
       For clauses that do not require concrete follow-up, return an empty flags array, even if the clause is high risk.
 
       Document text:

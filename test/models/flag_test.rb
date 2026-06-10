@@ -17,10 +17,14 @@ class FlagTest < ActiveSupport::TestCase
     flag = @clause.flags.create!(
       name: "Clarify payment deadline",
       reason: "The timeframe may need follow-up.",
-      level: "high"
+      level: "high",
+      category: "deadline",
+      suggested_action: "Ask whether the deadline can be extended."
     )
 
     assert_equal @clause, flag.clause
+    assert_equal "deadline", flag.category
+    assert_equal "Ask whether the deadline can be extended.", flag.suggested_action
     assert_not flag.resolved?
     assert_nil flag.resolved_at
   end
@@ -35,12 +39,18 @@ class FlagTest < ActiveSupport::TestCase
   end
 
   test "clears resolved timestamp when reopened" do
-    flag = @clause.flags.create!(name: "Review clause", level: "medium", resolved: true)
+    flag = @clause.flags.create!(
+      name: "Review clause",
+      level: "medium",
+      resolved: true,
+      resolution_note: "Accepted after review."
+    )
 
     flag.update!(resolved: false)
 
     assert_not flag.resolved?
     assert_nil flag.resolved_at
+    assert_nil flag.resolution_note
   end
 
   test "level must be low medium or high when present" do
@@ -48,5 +58,12 @@ class FlagTest < ActiveSupport::TestCase
 
     assert_not flag.valid?
     assert_includes flag.errors[:level], "is not included in the list"
+  end
+
+  test "category must be one of the supported categories when present" do
+    flag = @clause.flags.build(name: "Review clause", category: "admin")
+
+    assert_not flag.valid?
+    assert_includes flag.errors[:category], "is not included in the list"
   end
 end

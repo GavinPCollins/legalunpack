@@ -27,6 +27,6 @@ class FlagsController < ApplicationController
   end
 
   def flag_params
-    params.require(:flag).permit(:resolved)
+    params.require(:flag).permit(:resolved, :resolution_note)
   end
 end
