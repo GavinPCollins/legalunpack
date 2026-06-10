@@ -83,6 +83,50 @@ class DocFileTest < ActiveSupport::TestCase
     assert_equal [ retryable_doc_file ], @package.doc_files.ready_for_ai.to_a
   end
 
+  test "processing error message extracts api message from stored response body" do
+    error_message = "Request body too large for gpt-4.1-mini model. Max size: 8000 tokens."
+    doc_file = create_doc_file(
+      extraction_status: "complete",
+      extracted_text: "Too much text.",
+      ai_status: "failed"
+    )
+    doc_file.update!(ai_error: %(GitHub Models request failed: 413 {"message":"#{error_message}"}))
+
+    assert_equal error_message, doc_file.processing_error_message
+  end
+
+  test "processing error message extracts nested api error message from stored response body" do
+    error_message = "Request body too large for gpt-4.1-mini model. Max size: 8000 tokens."
+    doc_file = create_doc_file(
+      extraction_status: "complete",
+      extracted_text: "Too much text.",
+      ai_status: "failed"
+    )
+    error_payload = {
+      error: {
+        code: "tokens_limit_reached",
+        message: error_message,
+        details: error_message
+      }
+    }
+    doc_file.update!(
+      ai_error: "GitHub Models request failed: 413 #{error_payload.to_json}"
+    )
+
+    assert_equal error_message, doc_file.processing_error_message
+  end
+
+  test "processing error message falls back to stored extraction error" do
+    doc_file = create_doc_file(
+      extraction_status: "failed",
+      extracted_text: nil,
+      ai_status: "pending"
+    )
+    doc_file.update!(extraction_error: "Zip end of central directory signature not found")
+
+    assert_equal "Zip end of central directory signature not found", doc_file.processing_error_message
+  end
+
   test "needs text extraction includes old files with nil extraction status" do
     old_doc_file = create_doc_file(extraction_status: "pending", extracted_text: nil)
     old_doc_file.update_column(:extraction_status, nil)
