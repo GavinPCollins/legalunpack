@@ -1,0 +1,40 @@
+<% micro_details = [] %>
+<% micro_details << flag.category.humanize if flag.category.present? %>
+<% micro_details << (flag.resolved? ? "Resolved" : "Open") %>
+<% priority_label = flag.level.present? ? "#{flag.level.humanize} priority" : "Review" %>
+<%
+  priority_class =
+    case flag.level
+    when "high"
+      "badge-danger"
+    when "medium"
+      "badge-warning"
+    when "low"
+      "badge-info"
+    else
+      "badge-neutral"
+    end
+%>
+
+<article class="flex items-center justify-between gap-4 rounded-md border border-neutral-200 bg-white px-4 py-3">
+  <div class="min-w-0">
+    <div class="flex flex-wrap items-center gap-2">
+      <h3 class="break-words text-sm font-semibold text-neutral-950"><%= flag.name %></h3>
+      <span class="pill <%= priority_class %>"><%= priority_label %></span>
+    </div>
+    <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-neutral-500">
+      <% micro_details.each_with_index do |detail, index| %>
+        <% if index.positive? %>
+          <span aria-hidden="true" class="text-neutral-300">/</span>
+        <% end %>
+        <span><%= detail %></span>
+      <% end %>
+    </p>
+  </div>
+
+  <button type="button"
+          class="btn shrink-0"
+          data-action="flag-drawer#open">
+    See more
+  </button>
+</article>

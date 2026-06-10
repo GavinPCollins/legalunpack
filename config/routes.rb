@@ -19,6 +19,7 @@ Rails.application.routes.draw do
   # CODEX add document updates
   resources :doc_files, only: [:show, :create, :destroy] do
     get :summary, on: :member
+    get :flags, on: :member
     get :summary_search, on: :collection
   end
   resources :flags, only: [:update]

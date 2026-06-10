@@ -32,6 +32,14 @@ class FlagsControllerTest < ActionDispatch::IntegrationTest
     assert_not_nil @flag.resolved_at
   end
 
+  test "should add a default resolution note when resolving without one" do
+    patch flag_url(@flag), params: { flag: { resolved: true, resolution_note: "" } }
+
+    assert_redirected_to package_path(@flag.clause.package)
+    assert @flag.reload.resolved?
+    assert_equal "No notes added", @flag.resolution_note
+  end
+
   test "should resolve current user's flag with turbo stream replacement" do
     patch flag_url(@flag),
           params: { flag: { resolved: true, resolution_note: "Added to negotiation list." } },
@@ -45,6 +53,20 @@ class FlagsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Deadline"
     assert_includes response.body, "Suggested action"
     assert_includes response.body, "Added to negotiation list."
+  end
+
+  test "should preserve icon trigger when resolving from a search result" do
+    patch flag_url(@flag),
+          params: {
+            flag: { resolved: true, resolution_note: "" },
+            render_context: "icon_trigger"
+          },
+          as: :turbo_stream
+
+    assert_response :success
+    assert_select "turbo-stream[action='replace'][target='flag_#{@flag.id}']"
+    assert_select "button[aria-label='View flag: Clarify payment deadline']"
+    assert_includes response.body, "No notes added"
   end
 
   test "should not update another user's flag" do
