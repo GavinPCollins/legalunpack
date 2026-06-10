@@ -139,7 +139,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_10_100300) do
     t.string "title", null: false
     t.datetime "updated_at", null: false
     t.index ["jurisdiction", "source_type"], name: "index_legal_sources_on_jurisdiction_and_source_type"
-    t.index ["source_url"], name: "index_legal_sources_on_source_url", unique: true
+    t.index ["source_url"], name: "index_legal_sources_on_source_url", unique: true, where: "((source_url IS NOT NULL) AND ((source_url)::text <> ''::text))"
   end
 
   create_table "packages", force: :cascade do |t|
