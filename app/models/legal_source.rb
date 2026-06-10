@@ -4,6 +4,7 @@ class LegalSource < ApplicationRecord
   SOURCE_FORMATS = %w[html pdf txt].freeze
 
   has_one_attached :source_file
+  has_many :legal_source_chunks, dependent: :destroy
 
   before_validation :normalize_blank_source_url
 

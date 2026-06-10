@@ -1,7 +1,11 @@
 <div class="page-item">
+  <% remove_mode = params[:remove].present? %>
+
   <%= render "components/headers/header_main",
         page_header: "Source Management",
         page_subheader: "Manage the trusted legal resources available to Legalunpack.",
+        secondary_label: remove_mode ? "Done removing" : "Remove resource",
+        secondary_path: remove_mode ? legal_sources_path : legal_sources_path(remove: true),
         primary_label: "Add resource",
         primary_path: new_legal_source_path %>
 
@@ -52,6 +56,16 @@
                 <span class="font-semibold text-neutral-600">Source:</span>
                 <span class="break-words"><%= source.source_name %></span>
               </p>
+            <% end %>
+
+            <% if remove_mode %>
+              <div class="mt-4 border-t border-neutral-200 pt-4">
+                <%= button_to "Remove resource",
+                      legal_source_path(source),
+                      method: :delete,
+                      form: { data: { turbo_confirm: "Remove #{source.title}?" } },
+                      class: "btn w-full border-red-200 text-red-700 hover:bg-red-50 hover:text-red-900" %>
+              </div>
             <% end %>
           </article>
         <% end %>

@@ -30,6 +30,10 @@ export default class extends Controller {
     this.selectedFiles = this.selectedFiles.concat(Array.from(files))
     this.syncInput()
     this.render()
+    this.element.dispatchEvent(new CustomEvent("file-upload:changed", {
+      bubbles: true,
+      detail: { files: this.selectedFiles }
+    }))
   }
 
   syncInput() {

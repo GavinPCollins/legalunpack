@@ -13,10 +13,35 @@ class LegalSourcesController < ApplicationController
     @legal_source = LegalSource.new(legal_source_params)
 
     if @legal_source.save
-      redirect_to legal_sources_path, notice: "Legal source added."
+      ImportLegalSourceFromUrl.call(@legal_source)
+      redirect_to legal_sources_path, notice: "Legal source added and imported."
     else
       render :new, status: :unprocessable_entity
     end
+  rescue StandardError => error
+    @legal_source.destroy if @legal_source&.persisted?
+    @legal_source ||= LegalSource.new(legal_source_params)
+    @legal_source.errors.add(:base, "Import failed: #{error.message}")
+    render :new, status: :unprocessable_entity
+  end
+
+  def autofill
+    uploaded_file = params.require(:source_file)
+    metadata = LegalSourceMetadataExtractor.call(uploaded_file)
+
+    render json: { metadata: metadata }
+  rescue ActionController::ParameterMissing
+    render json: { error: "Choose a file before using autofill." }, status: :unprocessable_entity
+  rescue StandardError => error
+    Rails.logger.warn("Legal source autofill failed: #{error.class} - #{error.message}")
+    render json: { error: "Metadata could not be detected for this file." }, status: :unprocessable_entity
+  end
+
+  def destroy
+    legal_source = LegalSource.find(params[:id])
+    legal_source.destroy
+
+    redirect_to legal_sources_path(remove: true), notice: "Legal source removed."
   end
 
   private

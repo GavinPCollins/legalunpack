@@ -1,15 +1,21 @@
-<div class="page-main">
-  <%= form_with model: @legal_source, html: { multipart: true }, class: "form", data: { controller: "file-upload" } do |form| %>
+<div class="page-item">
+  <%= form_with model: @legal_source,
+        html: { multipart: true },
+        data: {
+          controller: "file-upload legal-source-autofill",
+          action: "file-upload:changed->legal-source-autofill#fillFromSelectedFiles",
+          legal_source_autofill_url_value: autofill_legal_sources_path
+        } do |form| %>
     <%= render "components/headers/header_main",
           page_header: "Add Resource",
-          page_subheader: "Create a trusted legal source record from a URL or uploaded file.",
+          page_subheader: "Create a trusted legal source record from an official URL or uploaded source file.",
           borderless_label: "Cancel",
           borderless_path: legal_sources_path,
           primary_label: "Add resource",
           primary_type: :submit %>
 
     <section class="content">
-      <div class="form">
+      <div class="form max-w-5xl">
         <% if @legal_source.errors.any? %>
           <div class="form-part">
             <% @legal_source.errors.full_messages.each do |message| %>
@@ -19,68 +25,8 @@
         <% end %>
 
         <div class="form-part">
-          <div class="field">
-            <%= form.label :title, "Resource title" %>
-            <%= form.text_field :title, class: "input-text", placeholder: "Residential Tenancies Act 1997" %>
-          </div>
-        </div>
-
-        <div class="form-part">
-          <div class="field">
-            <%= form.label :citation, "Citation" %>
-            <%= form.text_field :citation, class: "input-text", placeholder: "Authorised Version No. 111" %>
-          </div>
-        </div>
-
-        <div class="form-part">
-          <div class="field">
-            <%= form.label :publisher, "Publisher" %>
-            <%= form.text_field :publisher, class: "input-text", placeholder: "Victorian Legislation" %>
-          </div>
-        </div>
-
-        <div class="form-part">
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div class="field">
-              <%= form.label :jurisdiction, "Jurisdiction" %>
-              <%= form.text_field :jurisdiction, class: "input-text", placeholder: "VIC" %>
-            </div>
-
-            <div class="field">
-              <%= form.label :source_format, "Format" %>
-              <%= form.select :source_format,
-                    LegalSource::SOURCE_FORMATS.map { |format| [format.upcase, format] },
-                    {},
-                    class: "input-text" %>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-part">
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div class="field">
-              <%= form.label :source_type, "Source type" %>
-              <%= form.select :source_type,
-                    LegalSource::SOURCE_TYPES.map { |source_type| [source_type.humanize, source_type] },
-                    {},
-                    class: "input-text" %>
-            </div>
-
-            <div class="field">
-              <%= form.label :authority_level, "Authority level" %>
-              <%= form.select :authority_level,
-                    LegalSource::AUTHORITY_LEVELS.map { |authority| [authority.humanize, authority] },
-                    {},
-                    class: "input-text" %>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-part">
-          <div class="field">
-            <%= form.label :source_url, "Source URL" %>
-            <%= form.url_field :source_url, class: "input-text", placeholder: "https://..." %>
-          </div>
+          <h2 class="text-base font-semibold text-neutral-950">Source material</h2>
+          <p class="mt-1 text-sm text-neutral-500">Provide either a public source URL or upload the source file.</p>
         </div>
 
         <div class="form-part">
@@ -99,10 +45,89 @@
                 <%= form.file_field :source_file,
                       class: "sr-only",
                       accept: ".pdf,.html,.htm,.txt,application/pdf,text/html,text/plain",
-                      data: { file_upload_target: "input", action: "change->file-upload#select" } %>
+                      data: {
+                        file_upload_target: "input",
+                        action: "change->file-upload#select"
+                      } %>
               </div>
             </div>
             <ul class="selected-files" data-file-upload-target="list" aria-live="polite"></ul>
+            <p class="mt-3 text-sm text-neutral-500" data-legal-source-autofill-target="status" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <div class="form-part">
+          <div class="field">
+            <%= form.label :source_url, "Source URL" %>
+            <%= form.url_field :source_url, class: "input-text", placeholder: "https://..." %>
+          </div>
+        </div>
+
+        <div class="form-part border-t border-neutral-200 pt-6">
+          <h2 class="text-base font-semibold text-neutral-950">Resource details</h2>
+          <p class="mt-1 text-sm text-neutral-500">Name the source as it should appear to admins and future retrieval tools.</p>
+        </div>
+
+        <div class="form-part lg:col-span-3">
+          <div class="field">
+            <%= form.label :title, "Resource title" %>
+            <%= form.text_field :title, class: "input-text", placeholder: "Residential Tenancies Act 1997" %>
+          </div>
+        </div>
+
+        <div class="form-part lg:col-span-3">
+          <div class="field">
+            <%= form.label :citation, "Citation" %>
+            <%= form.text_field :citation, class: "input-text", placeholder: "Authorised Version No. 111" %>
+          </div>
+        </div>
+
+        <div class="form-part lg:col-span-3">
+          <div class="field">
+            <%= form.label :publisher, "Publisher" %>
+            <%= form.text_field :publisher, class: "input-text", placeholder: "Victorian Legislation" %>
+          </div>
+        </div>
+
+        <div class="form-part lg:col-span-3">
+          <div class="field">
+            <%= form.label :jurisdiction, "Jurisdiction" %>
+            <%= form.text_field :jurisdiction, class: "input-text", placeholder: "VIC" %>
+          </div>
+        </div>
+
+        <div class="form-part border-t border-neutral-200 pt-6">
+          <h2 class="text-base font-semibold text-neutral-950">Classification</h2>
+          <p class="mt-1 text-sm text-neutral-500">Describe the type and authority of the resource so it can be reviewed consistently.</p>
+        </div>
+
+        <div class="form-part lg:col-span-2">
+          <div class="field">
+            <%= form.label :source_type, "Source type" %>
+            <%= form.select :source_type,
+                  LegalSource::SOURCE_TYPES.map { |source_type| [source_type.humanize, source_type] },
+                  {},
+                  class: "input-text" %>
+          </div>
+        </div>
+
+        <div class="form-part lg:col-span-2">
+          <div class="field">
+            <%= form.label :authority_level, "Authority level" %>
+            <%= form.select :authority_level,
+                  LegalSource::AUTHORITY_LEVELS.map { |authority| [authority.humanize, authority] },
+                  {},
+                  class: "input-text" %>
+          </div>
+        </div>
+
+        <div class="form-part lg:col-span-2">
+          <div class="field">
+            <%= form.label :source_format, "Format" %>
+            <%= form.select :source_format,
+                  LegalSource::SOURCE_FORMATS.map { |format| [format.upcase, format] },
+                  {},
+                  class: "input-text" %>
           </div>
         </div>
       </div>
