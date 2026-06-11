@@ -125,14 +125,12 @@
 
   <%# ============================================================
       NEED-ATTENTION DATA
-      A file needs attention when processing failed or it contains
-      at least one flag.
+      File issues appear first, followed by individual package flags.
       ============================================================ %>
   <%
-    attention_files = @package.doc_files.select do |doc_file|
+    file_issue_files = @package.doc_files.select do |doc_file|
       doc_file.extraction_status == "failed" ||
-        doc_file.ai_status == "failed" ||
-        doc_file.clauses.any? { |clause| clause.flags.any? }
+        doc_file.ai_status == "failed"
     end
 
     analysis_required_files = @package.doc_files.select do |doc_file|
@@ -140,6 +138,11 @@
         doc_file.extraction_status != "failed" &&
         doc_file.ai_status != "failed"
     end
+
+    package_flags = @package.doc_files
+                            .flat_map(&:clauses)
+                            .flat_map(&:flags)
+                            .sort_by { |flag| [flag.resolved? ? 1 : 0, flag.created_at || Time.current, flag.id] }
 
     ordered_doc_files = @package.doc_files.sort_by { |doc_file| [doc_file.created_at, doc_file.id] }
   %>
@@ -417,49 +420,50 @@
         </div>
       <% end %>
 
-      <% if attention_files.any? %>
+      <% if file_issue_files.any? %>
         <ul role="list" class="space-y-3">
-          <% attention_files.each do |doc_file| %>
-            <% flag_count = doc_file.clauses.sum { |clause| clause.flags.size } %>
-            <% processing_failed = doc_file.extraction_status == "failed" || doc_file.ai_status == "failed" %>
+          <% file_issue_files.each do |doc_file| %>
             <% processing_error_message = doc_file.processing_error_message.presence || "Document processing failed." %>
             <% file_name = doc_file.file.attached? ? doc_file.file.filename.to_s : "Untitled file" %>
 
-            <li class="rounded-md border <%= processing_failed ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50" %> p-4">
+            <li class="rounded-md border border-red-200 bg-red-50 p-4">
               <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div class="min-w-0">
                   <p class="truncate text-sm font-semibold text-neutral-950">
-                    <%= processing_failed ? "Failed to analyse - #{file_name}" : file_name %>
+                    Failed to analyse - <%= file_name %>
                   </p>
-                  <% if processing_failed %>
-                    <p class="mt-1 text-sm text-neutral-950">
-                      Reason: <%= processing_error_message %><br>
-                      Upload different file or call customer support
-                    </p>
-                  <% else %>
-                    <p class="mt-1 text-sm text-amber-800">
-                      <%= pluralize(flag_count, "flag") %> found.
-                    </p>
-                  <% end %>
+                  <p class="mt-1 text-sm text-neutral-950">
+                    Reason: <%= processing_error_message %><br>
+                    Upload different file or call customer support
+                  </p>
                 </div>
 
-                <% if processing_failed %>
-                  <%= button_to "Delete file",
-                        doc_file_path(doc_file),
-                        method: :delete,
-                        class: "shrink-0 text-sm font-semibold text-red-700 hover:text-red-900",
-                        form_class: "contents",
-                        form: { data: { turbo_confirm: "Delete #{file_name}?" } } %>
-                <% else %>
-                  <%= link_to "Review flags",
-                        flags_doc_file_path(doc_file),
-                        class: "shrink-0 text-sm font-semibold text-cyan-800 hover:text-cyan-950" %>
-                <% end %>
+                <%= button_to "Delete file",
+                      doc_file_path(doc_file),
+                      method: :delete,
+                      class: "shrink-0 text-sm font-semibold text-red-700 hover:text-red-900",
+                      form_class: "contents",
+                      form: { data: { turbo_confirm: "Delete #{file_name}?" } } %>
               </div>
             </li>
           <% end %>
         </ul>
-      <% elsif @package.errors[:base].blank? && analysis_required_files.blank? %>
+      <% end %>
+
+      <% if package_flags.any? %>
+        <section>
+          <h3 class="text-base font-semibold text-neutral-950">Flags</h3>
+          <ol class="mt-3 space-y-3">
+            <% package_flags.each do |flag| %>
+              <% flag_file = flag.clause.doc_file %>
+              <% flag_file_name = flag_file&.file&.attached? ? flag_file.file.filename.to_s : "Untitled file" %>
+              <%= render "components/flag", flag: flag, file_name: flag_file_name %>
+            <% end %>
+          </ol>
+        </section>
+      <% end %>
+
+      <% if @package.errors[:base].blank? && analysis_required_files.blank? && file_issue_files.blank? && package_flags.blank? %>
         <div class="rounded-md border border-dashed border-neutral-300 px-4 py-12 text-center">
           <p class="text-sm font-medium text-neutral-950">Nothing needs attention</p>
           <p class="mt-1 text-sm text-neutral-500">Failed processing and flags will appear here.</p>

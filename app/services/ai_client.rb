@@ -6,6 +6,10 @@ require "uri"
 class AiClient
   DEFAULT_ENDPOINT = "https://models.github.ai/inference/chat/completions"
   DEFAULT_MODEL = "openai/gpt-4.1-mini"
+  DEFAULT_OPEN_TIMEOUT = 5
+  DEFAULT_READ_TIMEOUT = 60
+  INVALID_RESPONSE_MESSAGE = "GitHub Models returned an invalid response."
+  TIMEOUT_MESSAGE = "GitHub Models request timed out."
 
   # Public entrypoint: AiClient.call("Your prompt text")
   def self.call(input, client: nil, model: nil, json_response: false)
@@ -24,9 +28,16 @@ class AiClient
     # Send one user message to the chat model.
     response_body = @client ? @client.call(request_parameters(input)) : perform_request(input)
     response = JSON.parse(response_body)
+    raise INVALID_RESPONSE_MESSAGE unless response.is_a?(Hash)
+
+    content = response.dig("choices", 0, "message", "content")
 
     # Extract only the assistant's message text from the API response.
-    response.dig("choices", 0, "message", "content")
+    raise INVALID_RESPONSE_MESSAGE unless content.is_a?(String) && content.present?
+
+    content
+  rescue JSON::ParserError, TypeError
+    raise INVALID_RESPONSE_MESSAGE
   end
 
   private
@@ -40,13 +51,15 @@ class AiClient
     request["X-GitHub-Api-Version"] = "2026-03-10"
     request.body = request_parameters(input).to_json
 
-    response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == "https") do |http|
+    response = Net::HTTP.start(uri.hostname, uri.port, **http_options(uri)) do |http|
       http.request(request)
     end
 
     raise github_models_error_message(response) unless response.is_a?(Net::HTTPSuccess)
 
     response.body
+  rescue Timeout::Error
+    raise TIMEOUT_MESSAGE
   end
 
   def github_models_error_message(response)
@@ -63,6 +76,14 @@ class AiClient
 
   def github_token
     ENV["GITHUB_MODELS_TOKEN"].presence || ENV.fetch("GITHUB_TOKEN")
+  end
+
+  def http_options(uri)
+    {
+      use_ssl: uri.scheme == "https",
+      open_timeout: ENV.fetch("GITHUB_MODELS_OPEN_TIMEOUT", DEFAULT_OPEN_TIMEOUT).to_i,
+      read_timeout: ENV.fetch("GITHUB_MODELS_READ_TIMEOUT", DEFAULT_READ_TIMEOUT).to_i
+    }
   end
 
   def request_parameters(input)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_11_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_11_121141) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -141,7 +141,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_11_000000) do
     t.string "title", null: false
     t.datetime "updated_at", null: false
     t.index ["jurisdiction", "source_type"], name: "index_legal_sources_on_jurisdiction_and_source_type"
-    t.index ["source_url"], name: "index_legal_sources_on_source_url", unique: true
+    t.index ["source_url"], name: "index_legal_sources_on_source_url", unique: true, where: "((source_url IS NOT NULL) AND ((source_url)::text <> ''::text))"
   end
 
   create_table "packages", force: :cascade do |t|
