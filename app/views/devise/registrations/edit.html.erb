@@ -1,0 +1,107 @@
+<div class="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
+  <%= render "components/headers/header_main",
+        page_header: "Profile",
+        page_subheader: "Manage your account details and sign-in credentials.",
+        borderless_label: "Back",
+        borderless_path: request.referer.presence || root_path %>
+
+  <div class="space-y-5">
+    <section class="content">
+      <div class="mb-8 flex items-center gap-4 border-b border-neutral-200 pb-6">
+        <span class="flex size-12 shrink-0 items-center justify-center rounded-full bg-neutral-50 text-base font-bold text-neutral-700 outline -outline-offset-1 outline-black/5">
+          <%= (resource.try(:name).presence || resource.username.presence || resource.email).first.upcase %>
+        </span>
+        <div class="min-w-0">
+          <h2 class="truncate text-base font-semibold text-neutral-950"><%= resource.try(:name).presence || resource.username.presence || "Account" %></h2>
+          <p class="truncate text-sm text-neutral-500"><%= resource.email %></p>
+        </div>
+      </div>
+
+      <%= form_for(resource, as: resource_name, url: registration_path(resource_name), html: { method: :put, class: "form" }) do |form| %>
+        <%= render "devise/shared/error_messages", resource: resource %>
+
+        <div class="form-part">
+          <div class="field">
+            <%= form.label :name, "Name" %>
+            <%= form.text_field :name, autocomplete: "name", class: "input-text" %>
+          </div>
+        </div>
+
+        <div class="form-part">
+          <div class="field">
+            <%= form.label :username, "Username" %>
+            <%= form.text_field :username, autocomplete: "username", required: true, class: "input-text" %>
+          </div>
+        </div>
+
+        <div class="form-part">
+          <div class="field">
+            <%= form.label :email, "Email address" %>
+            <%= form.email_field :email, autocomplete: "email", required: true, class: "input-text" %>
+          </div>
+        </div>
+
+        <% if devise_mapping.confirmable? && resource.pending_reconfirmation? %>
+          <div class="form-part">
+            <div class="rounded-md border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-950">
+              Confirmation pending for <%= resource.unconfirmed_email %>.
+            </div>
+          </div>
+        <% end %>
+
+        <div class="form-part border-t border-neutral-200 pt-6">
+          <h2 class="text-base font-semibold text-neutral-950">Password</h2>
+          <p class="mt-1 text-sm text-neutral-600">Leave the new password fields blank to keep your current password.</p>
+        </div>
+
+        <div class="form-part">
+          <div class="field">
+            <div class="flex items-center justify-between gap-3">
+              <%= form.label :password, "New password" %>
+              <% if @minimum_password_length %>
+                <span class="text-xs font-medium text-neutral-500"><%= @minimum_password_length %> characters minimum</span>
+              <% end %>
+            </div>
+            <%= form.password_field :password, autocomplete: "new-password", class: "input-text" %>
+          </div>
+        </div>
+
+        <div class="form-part">
+          <div class="field">
+            <%= form.label :password_confirmation, "Confirm new password" %>
+            <%= form.password_field :password_confirmation, autocomplete: "new-password", class: "input-text" %>
+          </div>
+        </div>
+
+        <div class="form-part">
+          <div class="field">
+            <div class="flex items-center justify-between gap-3">
+              <%= form.label :current_password, "Current password" %>
+              <span class="text-xs font-medium text-neutral-500">Required to save changes</span>
+            </div>
+            <%= form.password_field :current_password, autocomplete: "current-password", required: true, class: "input-text" %>
+          </div>
+        </div>
+
+        <div class="form-part">
+          <%= form.submit "Save profile", class: "btn btn-primary w-full sm:w-auto" %>
+        </div>
+      <% end %>
+    </section>
+
+    <section class="content border-red-100 bg-red-50/40">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-base font-semibold text-red-950">Delete account</h2>
+          <p class="mt-1 text-sm text-red-800">This permanently removes your account and cannot be undone.</p>
+        </div>
+
+        <%= button_to "Delete account",
+              registration_path(resource_name),
+              method: :delete,
+              form: { data: { turbo_confirm: "Delete your account?" } },
+              class: "w-full rounded-md border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 hover:text-red-900 sm:w-auto" %>
+      </div>
+    </section>
+  </div>
+</div>

@@ -1,5 +1,5 @@
 <% if resource.errors.any? %>
-  <div class="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+  <div class="col-span-full rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">
     <p class="font-semibold">
       <%= pluralize(resource.errors.count, "error") %> prevented this account from being saved.
     </p>

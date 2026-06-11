@@ -51,6 +51,27 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "should search inside uploaded filenames with underscores" do
+    package = @user.packages.create!(name: "Townhouse lease")
+    package.doc_files.create!(
+      file: {
+        io: StringIO.new("Lease text."),
+        filename: "Townhouse_Subiaco_GlosterSt.pdf",
+        content_type: "application/pdf"
+      }
+    )
+
+    get packages_url, params: { q: "Subiaco" }
+
+    assert_response :success
+    assert_select "turbo-frame#package_search_results" do
+      assert_select "p", text: "Townhouse lease"
+      assert_select "mark", text: /Subiaco/i
+      assert_select "span", text: "Open package"
+      assert_select "p", text: "Lease review", count: 0
+    end
+  end
+
   # CODEX search function updates
   test "should not search uploaded file ai summary" do
     @user.packages.create!(name: "Supplier agreement").doc_files.create!(

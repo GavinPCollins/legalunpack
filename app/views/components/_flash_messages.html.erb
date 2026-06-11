@@ -1,0 +1,24 @@
+<% visible_flash = flash.to_hash.compact_blank %>
+
+<% if visible_flash.any? %>
+  <div class="pointer-events-none fixed inset-x-0 top-4 z-[100] flex flex-col items-center gap-2 px-4 sm:items-end">
+    <% visible_flash.each do |type, message| %>
+      <% success = type.to_s == "notice" %>
+      <div class="<%= class_names(
+        "pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-md border bg-white px-4 py-3 text-sm shadow-lg transition duration-200",
+        success ? "border-cyan-200 text-cyan-950" : "border-red-200 text-red-800"
+      ) %>" role="<%= success ? "status" : "alert" %>" data-controller="toast">
+        <div class="<%= class_names(
+          "mt-0.5 size-2.5 shrink-0 rounded-full",
+          success ? "bg-cyan-600" : "bg-red-600"
+        ) %>"></div>
+        <p class="min-w-0 flex-1"><%= message %></p>
+        <button type="button" class="-m-1 rounded-md p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700" aria-label="Dismiss notification" data-action="toast#close">
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="size-4">
+            <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+          </svg>
+        </button>
+      </div>
+    <% end %>
+  </div>
+<% end %>
