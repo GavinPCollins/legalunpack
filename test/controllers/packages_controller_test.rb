@@ -225,8 +225,15 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
       assert_select "svg"
       assert_select "span", text: "1"
     end
-    assert_select "a[href='#{flags_doc_file_path(doc_file)}']", text: "Review flags"
-    assert_includes response.body, "1 flag found."
+    assert_select "h3", text: "Flags"
+    assert_select "li##{dom_id(clause.flags.first)}" do
+      assert_select "h3", text: "Clarify payment deadline"
+      assert_select "button[data-action='flag-drawer#open']", text: "See more"
+      assert_select "dialog[data-flag-drawer-target='dialog']" do
+        assert_select "h2", text: /Clarify payment deadline/
+        assert_select "p", text: "sample.txt"
+      end
+    end
     assert_not_includes response.body, "high-risk"
     assert_select "dialog[id='#{dom_id(doc_file, :package_risks)}']", count: 0
   end
@@ -282,13 +289,19 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
 
   test "should not show analysis task for failed files" do
     error_message = "Request body too large for gpt-4.1-mini model. Max size: 8000 tokens."
-    @package.doc_files.create!(
+    doc_file = @package.doc_files.create!(
       extraction_status: "complete",
       extracted_text: "Could not analyze.",
       ai_status: "failed",
       ai_error: %(GitHub Models request failed: 413 {"message":"#{error_message}"}),
       file: fixture_file_upload("sample.txt", "text/plain")
     )
+    clause = doc_file.clauses.create!(
+      package: @package,
+      title: "Payment",
+      risk_level: "low"
+    )
+    clause.flags.create!(name: "Confirm payment deadline", level: "high")
 
     get package_url(@package)
 
@@ -299,6 +312,8 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Upload different file or call customer support"
     assert_select "form[action='#{doc_file_path(@package.doc_files.first)}'][method='post'] button", text: "Delete file"
     assert_select "h3", text: "Analysis required", count: 0
+    assert response.body.index("Failed to analyse - sample.txt") < response.body.index(">Flags<")
+    assert_select "button[data-action='flag-drawer#open']", text: "See more"
   end
 
   test "should get analysis" do

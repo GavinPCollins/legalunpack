@@ -26,6 +26,46 @@ class AiClientTest < ActiveSupport::TestCase
     end
   end
 
+  test "rejects malformed response json" do
+    error = assert_raises RuntimeError do
+      AiClient.call("Reply with a greeting.", client: RawGitHubModelsClient.new("not json"))
+    end
+
+    assert_equal AiClient::INVALID_RESPONSE_MESSAGE, error.message
+  end
+
+  test "rejects response without assistant content" do
+    error = assert_raises RuntimeError do
+      AiClient.call("Reply with a greeting.", client: RawGitHubModelsClient.new({ choices: [] }.to_json))
+    end
+
+    assert_equal AiClient::INVALID_RESPONSE_MESSAGE, error.message
+  end
+
+  test "rejects valid json with an unexpected shape" do
+    error = assert_raises RuntimeError do
+      AiClient.call("Reply with a greeting.", client: RawGitHubModelsClient.new([].to_json))
+    end
+
+    assert_equal AiClient::INVALID_RESPONSE_MESSAGE, error.message
+  end
+
+  test "rejects blank assistant content" do
+    error = assert_raises RuntimeError do
+      AiClient.call("Reply with a greeting.", client: FakeGitHubModelsClient.new("  "))
+    end
+
+    assert_equal AiClient::INVALID_RESPONSE_MESSAGE, error.message
+  end
+
+  test "uses bounded http timeouts" do
+    options = AiClient.new.send(:http_options, URI("https://models.github.ai"))
+
+    assert_equal true, options[:use_ssl]
+    assert_equal AiClient::DEFAULT_OPEN_TIMEOUT, options[:open_timeout]
+    assert_equal AiClient::DEFAULT_READ_TIMEOUT, options[:read_timeout]
+  end
+
   test "uses response message for github model errors" do
     response = Struct.new(:code, :body).new(
       "413",
@@ -71,6 +111,12 @@ class AiClientTest < ActiveSupport::TestCase
           }
         ]
       }.to_json
+    end
+  end
+
+  RawGitHubModelsClient = Struct.new(:response_body) do
+    def call(_parameters)
+      response_body
     end
   end
 end

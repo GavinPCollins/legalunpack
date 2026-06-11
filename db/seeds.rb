@@ -14,7 +14,8 @@ gavin.update!(
   name: "Gavin",
   username: "gavin",
   password: "111111",
-  password_confirmation: "111111"
+  password_confirmation: "111111",
+  admin: true
 )
 
 halo = User.find_or_initialize_by(email: "halo@example.com")
@@ -22,7 +23,8 @@ halo.update!(
   name: "Halo",
   username: "halo",
   password: "123456",
-  password_confirmation: "123456"
+  password_confirmation: "123456",
+  admin: true
 )
 
 george = User.find_or_initialize_by(email: "george@example.com")
@@ -30,7 +32,17 @@ george.update!(
   name: "George",
   username: "george",
   password: "123456",
-  password_confirmation: "123456"
+  password_confirmation: "123456",
+  admin: true
+)
+
+sarah = User.find_or_initialize_by(email: "sarah@example.com")
+sarah.update!(
+  name: "Sarah",
+  username: "sarah",
+  password: "111111",
+  password_confirmation: "111111",
+  admin: false
 )
 
 puts "Users created"
