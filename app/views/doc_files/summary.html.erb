@@ -11,9 +11,10 @@
         ],
         search_path: summary_search_doc_files_path,
         search_name: :q,
-        search_placeholder: "Search in the file",
-        search_drawer_title: "Clause search",
-        search_drawer_body: "Press Return to search AI summaries.",
+        search_params: { package_id: @package.id },
+        search_placeholder: "Search this package",
+        search_drawer_title: "Package search",
+        search_drawer_body: "Press Return to search this package.",
         search_frame_id: "summary_search_results",
         overflow_actions: [
           { label: "Rename package", type: :button, data: { action: "modal#open", modal_dialog_param: "rename" } },
