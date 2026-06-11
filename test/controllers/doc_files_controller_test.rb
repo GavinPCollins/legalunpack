@@ -116,6 +116,7 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
       assert_select "[aria-current='page']", count: 0
     end
     assert_select ".item-header-title .subheader", count: 0
+    assert_select "form.item-search input[type='hidden'][name='package_id'][value='#{@package.id}']"
     assert_includes response.body, "This file sets payment obligations."
   end
 

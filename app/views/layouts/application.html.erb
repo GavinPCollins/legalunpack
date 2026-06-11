@@ -69,6 +69,7 @@
         </header>
 
         <main class="app-shell">
+          <%= render "components/flash_messages" %>
           <%= yield %>
         </main>
       </div>
@@ -84,7 +85,8 @@
           </div>
         </nav>
       </header>
-      <main class="mx-auto flex w-full max-w-6xl px-5 py-12 mt-8 border-neutral-200">
+      <main class="mx-auto w-full max-w-6xl px-5 py-12 mt-8 border-neutral-200">
+        <%= render "components/flash_messages" %>
         <%= yield %>
       </main>
     <% end %>
