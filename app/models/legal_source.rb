@@ -1,4 +1,8 @@
+require "pg_search/model"
+
 class LegalSource < ApplicationRecord
+  include PgSearch::Model
+
   SOURCE_TYPES = %w[act regulation regulator_guidance case internal_note other].freeze
   AUTHORITY_LEVELS = %w[legislation regulation guidance case_law internal_note other].freeze
   SOURCE_FORMATS = %w[html pdf txt].freeze
@@ -16,6 +20,15 @@ class LegalSource < ApplicationRecord
   validate :source_location_present
 
   scope :recent_first, -> { order(created_at: :desc, title: :asc) }
+
+  pg_search_scope :search_by_title_and_text,
+                  against: [ :title, :citation, :raw_text ],
+                  associated_against: {
+                    legal_source_chunks: [ :heading, :section_label, :content ]
+                  },
+                  using: {
+                    tsearch: { prefix: true }
+                  }
 
   def source_name
     source_file.attached? ? source_file.filename.to_s : source_url

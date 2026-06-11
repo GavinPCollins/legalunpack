@@ -1,15 +1,30 @@
 require "test_helper"
 
 class LegalSourceTest < ActiveSupport::TestCase
-  test "is valid with a source url" do
+  test "valid with trusted source metadata" do
     legal_source = LegalSource.new(
-      title: "Residential Tenancies Act 1997",
+      title: "Refunds and returns",
       jurisdiction: "VIC",
-      source_type: "act",
-      authority_level: "legislation",
-      publisher: "Victorian Legislation",
-      source_url: "https://example.com/residential-tenancies",
+      source_type: "regulator_guidance",
+      authority_level: "guidance",
+      source_url: "https://www.consumer.vic.gov.au/refunds",
       source_format: "html"
+    )
+
+    assert legal_source.valid?
+  end
+
+  test "valid with an uploaded file instead of a source url" do
+    legal_source = LegalSource.new(
+      title: "Uploaded guidance",
+      jurisdiction: "VIC",
+      source_type: "regulator_guidance",
+      authority_level: "guidance",
+      source_format: "txt",
+      source_file: Rack::Test::UploadedFile.new(
+        Rails.root.join("test/fixtures/files/sample.txt"),
+        "text/plain"
+      )
     )
 
     assert legal_source.valid?

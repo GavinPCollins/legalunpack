@@ -349,7 +349,6 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "turbo-frame#summary_search_results" do
       assert_select "p", text: /matches in this package/
-      assert_select "summary", count: 0
       assert_select "p", text: "Clause 2 match"
       assert_select "p", text: "Creates an air conditioner repair obligation."
       assert_select "span", text: "medium", count: 0

@@ -1,0 +1,24 @@
+# Trusted legal sources for backend import.
+#
+# Keep this file as the curated source list. Run:
+#   bin/rails legal_sources:sync
+#   bin/rails legal_sources:import PENDING_ONLY=1
+#
+# Use source_url for website/PDF URLs. Use source_path for local files under data/legal_sources.
+
+- title: Refunds and returns
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_url: https://www.consumer.vic.gov.au/consumers-and-businesses/refunds-and-returns
+  source_format: html
+
+# Example local file source:
+# - title: Example local consumer guidance
+#   jurisdiction: VIC
+#   source_type: regulator_guidance
+#   authority_level: guidance
+#   publisher: Consumer Affairs Victoria
+#   source_path: data/legal_sources/example-guidance.txt
+#   source_format: txt
