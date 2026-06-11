@@ -103,6 +103,10 @@ module ApplicationHelper
     clause.summary.presence
   end
 
+  def failed_package_search_ai_question(query)
+    %(Can you help me find anything related to "#{query}" in this package?)
+  end
+
   private
 
   def search_terms(query)

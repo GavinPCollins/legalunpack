@@ -5,11 +5,32 @@ export default class extends Controller {
   static values = { url: String }
 
   open() {
+    this.show()
+    this.loadHistory()
+  }
+
+  show() {
     if (!this.dialogTarget.open) {
       this.dialogTarget.showModal()
     }
+  }
 
-    this.loadHistory()
+  prefill(event) {
+    this.open()
+
+    if (this.hasInputTarget) {
+      this.inputTarget.value = event.params.question || ""
+      this.inputTarget.focus()
+    }
+  }
+
+  async ask(event) {
+    const question = event.params.question?.trim()
+    if (!question) return
+
+    this.show()
+    await this.loadHistory()
+    await this.submitQuestion(question)
   }
 
   close() {
@@ -29,6 +50,12 @@ export default class extends Controller {
 
     const question = this.inputTarget.value.trim()
     if (!question) return
+
+    await this.submitQuestion(question)
+  }
+
+  async submitQuestion(question) {
+    if (!this.hasInputTarget || !this.hasThreadTarget || !this.hasUrlValue) return
 
     this.setFormDisabled(true)
     this.clearPlaceholderStatus()
