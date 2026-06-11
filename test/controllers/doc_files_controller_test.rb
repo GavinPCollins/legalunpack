@@ -433,6 +433,8 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "turbo-frame#summary_search_results" do
       assert_select "p", text: "No matching package results"
+      assert_select "button[data-action='search-drawer#close ai-chat-drawer#ask']", text: "Ask AI for help"
+      assert_select "button[data-ai-chat-drawer-question-param='Can you help me find anything related to \"payment\" in this package?']"
       assert_select "p", text: /Package name match/, count: 0
       assert_select "p", text: /File name match/, count: 0
       assert_select "p", text: /Package category match/, count: 0

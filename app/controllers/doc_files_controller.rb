@@ -49,10 +49,11 @@ class DocFilesController < ApplicationController
     @query = params[:q].to_s.strip
 
     if params[:package_id].present?
-      @package = package_summary_search_result
+      @search_package = current_user.packages.find(params[:package_id])
+      @package = package_summary_search_result(@search_package)
 
       return render partial: "doc_files/package_summary_search_results",
-                    locals: { package: @package, query: @query }
+                    locals: { package: @package, search_package: @search_package, query: @query }
     end
 
     @doc_files = summary_search_results
@@ -88,12 +89,12 @@ class DocFilesController < ApplicationController
     doc_files.search_by_ai_summary(@query).order(updated_at: :desc)
   end
 
-  def package_summary_search_result
+  def package_summary_search_result(package)
     return nil if @query.blank?
 
     package = current_user.packages
                           .includes({ clauses: :flags }, doc_files: { file_attachment: :blob })
-                          .find(params[:package_id])
+                          .find(package.id)
 
     if current_user.packages
                    .where(id: package.id)

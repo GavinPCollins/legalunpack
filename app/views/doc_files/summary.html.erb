@@ -17,6 +17,7 @@
         search_drawer_title: "Package search",
         search_drawer_body: "Press Return to search this package.",
         search_frame_id: "summary_search_results",
+        ai_chat_url: package_chatbot_sessions_path(@package),
         overflow_actions: [
           { label: "Rename package", type: :button, data: { action: "modal#open", modal_dialog_param: "rename" } },
           { label: "Add documents", type: :button, data: { action: "modal#open", modal_dialog_param: "documents" } },
