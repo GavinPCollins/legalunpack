@@ -216,7 +216,11 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
       title: "Payment",
       risk_level: "low"
     )
-    clause.flags.create!(name: "Clarify payment deadline", level: "high")
+    clause.flags.create!(
+      name: "Clarify payment deadline",
+      reason: "The payment deadline may need clarification.",
+      level: "high"
+    )
 
     get package_url(@package)
 
@@ -225,17 +229,51 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
       assert_select "svg"
       assert_select "span", text: "1"
     end
-    assert_select "h3", text: "Flags"
-    assert_select "li##{dom_id(clause.flags.first)}" do
+    assert_select "#package-active-flags h3", text: "1 Unresolved Flag"
+    assert_select "li##{dom_id(clause, :flag_group)}" do
       assert_select "h3", text: "Clarify payment deadline"
+      assert_select "p", text: "The payment deadline may need clarification."
       assert_select "button[data-action='flag-drawer#open']", text: "See more"
       assert_select "dialog[data-flag-drawer-target='dialog']" do
         assert_select "h2", text: /Clarify payment deadline/
         assert_select "p", text: "sample.txt"
+        assert_select "h4", text: "Details"
+        assert_select "p", text: "The payment deadline may need clarification."
       end
     end
     assert_not_includes response.body, "high-risk"
     assert_select "dialog[id='#{dom_id(doc_file, :package_risks)}']", count: 0
+  end
+
+  test "need attention counts and shows only active flags" do
+    doc_file = @package.doc_files.create!(
+      ai_status: "complete",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    clause = doc_file.clauses.create!(
+      package: @package,
+      title: "Payment",
+      risk_level: "low"
+    )
+    active_flag = clause.flags.create!(name: "Clarify payment deadline", level: "high")
+    resolved_flag = clause.flags.create!(
+      name: "Confirmed payment method",
+      level: "low",
+      resolved: true,
+      resolution_note: "Confirmed."
+    )
+
+    get package_url(@package)
+
+    assert_response :success
+    assert_select "#package-active-flags" do
+      assert_select "h3", text: "1 Unresolved Flag"
+      assert_select "article", text: /Clarify payment deadline/
+      assert_select "article", text: /Confirmed payment method/, count: 0
+      assert_select "input[name='render_context'][value='package_group_item']"
+    end
+    assert_includes response.body, active_flag.name
+    assert_not_includes response.body, resolved_flag.name
   end
 
   test "should enqueue text extraction when opening package with unextracted files" do
@@ -312,7 +350,7 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Upload different file or call customer support"
     assert_select "form[action='#{doc_file_path(@package.doc_files.first)}'][method='post'] button", text: "Delete file"
     assert_select "h3", text: "Analysis required", count: 0
-    assert response.body.index("Failed to analyse - sample.txt") < response.body.index(">Flags<")
+    assert response.body.index("Failed to analyse - sample.txt") < response.body.index("id=\"package-active-flags\"")
     assert_select "button[data-action='flag-drawer#open']", text: "See more"
   end
 
@@ -363,12 +401,15 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to package_url(@package)
     assert_equal "processing", pending_doc_file.reload.ai_status
     assert_equal "complete", complete_doc_file.reload.ai_status
+    assert_equal "analyzing_clauses", pending_doc_file.analysis_stage
+    assert_equal 1, pending_doc_file.analysis_position
+    assert_equal 1, pending_doc_file.analysis_total
 
     get package_url(@package)
 
     assert_response :success
-    assert_includes response.body, "Analyzing file..."
-    assert_select "[data-package-status-poll-target='analysisAction']", text: "Analyzing file..."
+    assert_includes response.body, "Analyzing clauses"
+    assert_select "[data-package-status-poll-target='analysisAction']", text: "Analyzing file 1 of 1"
     assert_select "[data-package-status-poll-target='analysisAction'] form[action='#{analyze_package_path(@package)}']", count: 0
     assert_select "[data-controller~='package-status-poll'][data-package-status-poll-active-value='true']"
   end

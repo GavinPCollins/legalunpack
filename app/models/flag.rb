@@ -9,12 +9,16 @@ class Flag < ApplicationRecord
     commercial_decision
     unclear_term
   ].freeze
+  EVIDENCE_BASES = %w[legal_reference commercial_risk legal_review].freeze
 
   belongs_to :clause
+  has_many :flag_legal_references, dependent: :destroy
+  has_many :legal_source_chunks, through: :flag_legal_references
 
   validates :name, presence: true
   validates :level, inclusion: { in: LEVELS }, allow_blank: true
   validates :category, inclusion: { in: CATEGORIES }, allow_blank: true
+  validates :evidence_basis, inclusion: { in: EVIDENCE_BASES }, allow_blank: true
 
   scope :unresolved, -> { where(resolved: false) }
   scope :resolved, -> { where(resolved: true) }

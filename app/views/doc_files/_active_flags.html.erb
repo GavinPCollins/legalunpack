@@ -1,0 +1,30 @@
+<%
+  active_flag_groups = doc_file.clauses.filter_map do |clause|
+    active_flags = clause.flags.reject(&:resolved?)
+    [ clause, active_flags ] if active_flags.any?
+  end
+  active_flag_count = active_flag_groups.sum { |_clause, flags| flags.size }
+%>
+
+<section id="file-active-flags" class="content">
+  <div class="flex flex-wrap items-end justify-between gap-3 border-b border-neutral-200 pb-4">
+    <h2 class="text-lg font-semibold text-neutral-950"><%= pluralize(active_flag_count, "Unresolved Flag") %></h2>
+  </div>
+
+  <% if active_flag_groups.any? %>
+    <ol class="mt-6 space-y-3">
+      <% active_flag_groups.each do |clause, active_flags| %>
+        <%= render "components/flag_group",
+              clause: clause,
+              flags: active_flags,
+              file_name: file_title,
+              render_context: "file_group_item" %>
+      <% end %>
+    </ol>
+  <% else %>
+    <div class="mt-6 rounded-md border border-dashed border-neutral-300 px-4 py-12 text-center">
+      <p class="text-sm font-medium text-neutral-950">No unresolved flags in this file</p>
+      <p class="mt-1 text-sm text-neutral-500">New flags created during analysis will appear here.</p>
+    </div>
+  <% end %>
+</section>

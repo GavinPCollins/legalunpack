@@ -1,0 +1,94 @@
+<% clause = flag.clause %>
+<% render_context = local_assigns[:render_context] || "action_item" %>
+
+<div class="space-y-6">
+  <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div>
+      <dt class="text-xs font-semibold uppercase tracking-wide text-neutral-500">Category</dt>
+      <dd class="mt-1 text-sm text-neutral-950"><%= flag.category.present? ? flag.category.humanize : "Not set" %></dd>
+    </div>
+    <div>
+      <dt class="text-xs font-semibold uppercase tracking-wide text-neutral-500">Status</dt>
+      <dd class="mt-1 text-sm text-neutral-950"><%= flag.resolved? ? "Resolved" : "Open" %></dd>
+    </div>
+    <% if flag.evidence_basis.present? %>
+      <div>
+        <dt class="text-xs font-semibold uppercase tracking-wide text-neutral-500">Basis</dt>
+        <dd class="mt-1 text-sm text-neutral-950"><%= flag.evidence_basis.humanize %></dd>
+      </div>
+    <% end %>
+  </dl>
+
+  <% if flag.details.present? || flag.reason.present? %>
+    <section>
+      <h4 class="text-sm font-semibold text-neutral-950">Details</h4>
+      <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700"><%= flag.details.presence || flag.reason %></p>
+    </section>
+  <% end %>
+
+  <% if flag.suggested_action.present? %>
+    <section class="rounded-md bg-neutral-50 p-4">
+      <h4 class="text-sm font-semibold text-neutral-950">Suggested action</h4>
+      <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700"><%= flag.suggested_action %></p>
+    </section>
+  <% end %>
+
+  <% if flag.legal_source_chunks.any? %>
+    <section>
+      <h4 class="text-sm font-semibold text-neutral-950">Legal references</h4>
+      <ul class="mt-2 space-y-2">
+        <% flag.legal_source_chunks.includes(:legal_source).each do |chunk| %>
+          <% source = chunk.legal_source %>
+          <li class="text-sm leading-6 text-neutral-700">
+            <span class="font-medium text-neutral-950"><%= source.citation.presence || source.title %></span>
+            <% if chunk.section_label.present? || chunk.heading.present? %>
+              <span> - <%= chunk.section_label.presence || chunk.heading %></span>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <% if clause.summary.present? %>
+    <section>
+      <h4 class="text-sm font-semibold text-neutral-950">Clause summary</h4>
+      <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700"><%= clause.summary %></p>
+    </section>
+  <% end %>
+
+  <% if clause.content.present? %>
+    <details>
+      <summary class="cursor-pointer text-sm font-semibold text-cyan-800 hover:text-cyan-950">View clause text</summary>
+      <pre class="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700"><%= clause.content %></pre>
+    </details>
+  <% end %>
+
+  <% if flag.resolved? %>
+    <% if flag.resolution_note.present? %>
+      <section class="rounded-md bg-emerald-50 p-4">
+        <h4 class="text-sm font-semibold text-emerald-950">Resolution note</h4>
+        <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-emerald-900"><%= flag.resolution_note %></p>
+      </section>
+    <% end %>
+
+    <%= button_to "Reopen",
+          flag_path(flag),
+          method: :patch,
+          params: { flag: { resolved: false }, render_context: render_context },
+          class: "btn btn-secondary" %>
+  <% else %>
+    <%= form_with model: flag, url: flag_path(flag), method: :patch, class: "rounded-md border border-neutral-200 p-4" do |form| %>
+      <%= form.hidden_field :resolved, value: true %>
+      <%= hidden_field_tag :render_context, render_context %>
+      <%= form.label :resolution_note, class: "block text-sm font-semibold text-neutral-950" do %>
+        Resolution note <span class="font-normal text-neutral-500">(optional)</span>
+      <% end %>
+      <%= form.text_area :resolution_note,
+            rows: 3,
+            placeholder: "Confirmed, accepted, added to negotiation list...",
+            class: "mt-2 block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm placeholder:text-neutral-400 focus:border-cyan-700 focus:outline-none focus:ring-1 focus:ring-cyan-700" %>
+      <%= form.submit "Resolve", class: "btn btn-primary mt-3" %>
+    <% end %>
+  <% end %>
+</div>

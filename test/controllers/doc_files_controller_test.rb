@@ -236,12 +236,14 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
       level: "high",
       category: "deadline",
       reason: "The deadline may be too short.",
+      details: "The clause requires payment sooner than expected and may be difficult to meet.",
       suggested_action: "Ask whether the deadline can be extended."
     )
     high_risk_clause = doc_file.clauses.create!(
       package: @package,
       title: "Indemnity",
       risk_level: "high",
+      summary: "Creates a broad indemnity requiring review.",
       position: 2
     )
     high_risk_clause.flags.create!(name: "Review indemnity", level: "medium")
@@ -260,29 +262,59 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
       assert_select "a[href='#{summary_doc_file_path(doc_file)}']", text: "sample.txt"
       assert_select "[aria-current='page']", count: 0
     end
-    assert_select "h2", text: "2 Flags"
+    assert_select "h2", text: "2 Unresolved Flags"
     assert_includes response.body, "Clarify payment deadline"
     assert_includes response.body, "Review indemnity"
     assert_select "button.btn", text: "See more", count: 2
     assert_select "dialog[data-flag-drawer-target='dialog']", count: 2
-    assert_select "article" do
+    assert_select "li##{dom_id(low_risk_clause, :flag_group)}" do
       assert_select "h3", text: "Clarify payment deadline"
-      assert_select "h3 + span.pill.badge-danger", text: "High priority"
-      assert_select "p", text: /Deadline/
-      assert_select "p", text: /Open/
-      assert_select "p", text: /deadline may be too short/i, count: 0
-    end
-    assert_select "article", text: /Review indemnity/ do
-      assert_select "span.pill.badge-warning", text: "Medium priority"
-    end
-    assert_select "dialog", text: /Clarify payment deadline/ do
-      assert_select "h2", text: /Clarify payment deadline/
-      assert_select "h2 span.pill.badge-danger", text: "High priority"
-      assert_select "p", text: "sample.txt"
-      assert_select "h3", text: "Reason"
+      assert_select "span.pill.badge-neutral", text: "1 flag"
+      assert_select "span.pill.badge-danger", text: "High priority"
       assert_select "p", text: "The deadline may be too short."
-      assert_select "h3", text: "Suggested action"
-      assert_select "p", text: "Ask whether the deadline can be extended."
+      assert_select "dialog" do
+        assert_select "h2", text: "Clarify payment deadline"
+        assert_select "article##{dom_id(low_risk_clause.flags.first)}" do
+          assert_select "h3", text: "Clarify payment deadline"
+          assert_select "h4", text: "Details"
+          assert_select "p", text: "The clause requires payment sooner than expected and may be difficult to meet."
+          assert_select "h4", text: "Suggested action"
+        end
+      end
+    end
+    assert_select "li##{dom_id(high_risk_clause, :flag_group)}" do
+      assert_select "h3", text: "Review indemnity"
+      assert_select "span.pill.badge-warning", text: "Medium priority"
+      assert_select "p", text: "Creates a broad indemnity requiring review."
+    end
+  end
+
+  test "flags page counts and shows only active flags" do
+    doc_file = @package.doc_files.create!(
+      ai_status: "complete",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    clause = doc_file.clauses.create!(
+      package: @package,
+      title: "Payment",
+      risk_level: "low"
+    )
+    clause.flags.create!(name: "Active payment concern", level: "high")
+    clause.flags.create!(
+      name: "Resolved payment concern",
+      level: "low",
+      resolved: true,
+      resolution_note: "Confirmed."
+    )
+
+    get flags_doc_file_url(doc_file)
+
+    assert_response :success
+    assert_select "#file-active-flags" do
+      assert_select "h2", text: "1 Unresolved Flag"
+      assert_select "article", text: /Active payment concern/
+      assert_select "article", text: /Resolved payment concern/, count: 0
+      assert_select "input[name='render_context'][value='file_group_item']"
     end
   end
 

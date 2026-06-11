@@ -48,10 +48,8 @@
                     <% if clause.flags.any? %>
                       <div class="mt-4">
                         <p class="text-sm font-medium text-neutral-800">Flags</p>
-                        <ol class="mt-2 space-y-2">
-                          <% clause.flags.sort_by { |flag| [ flag.resolved? ? 1 : 0, flag.created_at || Time.current ] }.each do |flag| %>
-                            <%= render "components/flag", flag: flag %>
-                          <% end %>
+                        <ol class="mt-2">
+                          <%= render "components/flag_group", clause: clause, flags: clause.flags %>
                         </ol>
                       </div>
                     <% end %>

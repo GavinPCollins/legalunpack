@@ -17,6 +17,22 @@ class DocFile < ApplicationRecord
 
   EXTRACTION_STATUSES = %w[pending processing complete failed].freeze
   AI_STATUSES = %w[pending processing complete failed].freeze
+  ANALYSIS_STAGES = %w[
+    waiting
+    extracting_text
+    analyzing_clauses
+    checking_sources
+    reviewing_concerns
+    preparing_results
+  ].freeze
+  ANALYSIS_STAGE_LABELS = {
+    "waiting" => "Waiting to start",
+    "extracting_text" => "Extracting text",
+    "analyzing_clauses" => "Analyzing clauses",
+    "checking_sources" => "Checking relevant sources",
+    "reviewing_concerns" => "Reviewing potential concerns",
+    "preparing_results" => "Preparing your results"
+  }.freeze
 
   belongs_to :package
   has_many :clauses, dependent: :nullify
@@ -45,6 +61,7 @@ class DocFile < ApplicationRecord
   validate :file_size
   validates :extraction_status, inclusion: { in: EXTRACTION_STATUSES }
   validates :ai_status, inclusion: { in: AI_STATUSES }
+  validates :analysis_stage, inclusion: { in: ANALYSIS_STAGES }, allow_nil: true
 
   # SET DEFAULT STATUS
   after_initialize :set_default_statuses, if: :new_record?
@@ -54,6 +71,16 @@ class DocFile < ApplicationRecord
     return if raw_error.blank?
 
     parsed_error_message(raw_error) || raw_error
+  end
+
+  def analysis_progress_label
+    ANALYSIS_STAGE_LABELS.fetch(analysis_stage, "Analyzing file")
+  end
+
+  def analysis_batch_label
+    return "Analyzing file" unless analysis_position.present? && analysis_total.present?
+
+    "Analyzing file #{analysis_position} of #{analysis_total}"
   end
 
   private

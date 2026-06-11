@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_11_121141) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_11_162500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -84,6 +84,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_11_121141) do
     t.datetime "ai_processed_at"
     t.string "ai_status", default: "pending", null: false
     t.text "ai_summary"
+    t.integer "analysis_position"
+    t.string "analysis_stage"
+    t.integer "analysis_total"
     t.datetime "created_at", null: false
     t.datetime "extracted_at"
     t.text "extracted_text"
@@ -97,10 +100,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_11_121141) do
     t.index ["package_id"], name: "index_doc_files_on_package_id"
   end
 
+  create_table "flag_legal_references", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "flag_id", null: false
+    t.bigint "legal_source_chunk_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["flag_id", "legal_source_chunk_id"], name: "index_flag_legal_references_uniqueness", unique: true
+    t.index ["flag_id"], name: "index_flag_legal_references_on_flag_id"
+    t.index ["legal_source_chunk_id"], name: "index_flag_legal_references_on_legal_source_chunk_id"
+  end
+
   create_table "flags", force: :cascade do |t|
     t.string "category"
     t.bigint "clause_id", null: false
     t.datetime "created_at", null: false
+    t.text "details"
+    t.string "evidence_basis"
     t.string "level"
     t.string "name", null: false
     t.text "reason"
@@ -141,7 +156,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_11_121141) do
     t.string "title", null: false
     t.datetime "updated_at", null: false
     t.index ["jurisdiction", "source_type"], name: "index_legal_sources_on_jurisdiction_and_source_type"
-    t.index ["source_url"], name: "index_legal_sources_on_source_url", unique: true
+    t.index ["source_url"], name: "index_legal_sources_on_source_url", unique: true, where: "((source_url IS NOT NULL) AND ((source_url)::text <> ''::text))"
   end
 
   create_table "packages", force: :cascade do |t|
@@ -323,6 +338,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_11_121141) do
   add_foreign_key "clauses", "doc_files"
   add_foreign_key "clauses", "packages"
   add_foreign_key "doc_files", "packages"
+  add_foreign_key "flag_legal_references", "flags"
+  add_foreign_key "flag_legal_references", "legal_source_chunks"
   add_foreign_key "flags", "clauses"
   add_foreign_key "legal_source_chunks", "legal_sources"
   add_foreign_key "packages", "users"

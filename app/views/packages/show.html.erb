@@ -1,4 +1,11 @@
 <% analysis_in_progress = @package.doc_files.any? { |doc_file| doc_file.ai_status == "processing" } %>
+<%
+  processing_files = @package.doc_files.select { |doc_file| doc_file.ai_status == "processing" }
+  current_analysis_file =
+    processing_files.find { |doc_file| doc_file.analysis_stage.present? && doc_file.analysis_stage != "waiting" } ||
+    processing_files.min_by { |doc_file| [doc_file.analysis_position || Float::INFINITY, doc_file.id] }
+  package_analysis_label = current_analysis_file&.analysis_batch_label || "Analyzing file"
+%>
 
 <div id="package-dashboard-<%= @package.id %>"
      class="page-item"
@@ -139,10 +146,9 @@
         doc_file.ai_status != "failed"
     end
 
-    package_flags = @package.doc_files
-                            .flat_map(&:clauses)
-                            .flat_map(&:flags)
-                            .sort_by { |flag| [flag.resolved? ? 1 : 0, flag.created_at || Time.current, flag.id] }
+    active_package_flags = @package.clauses
+                                   .flat_map(&:flags)
+                                   .reject(&:resolved?)
 
     ordered_doc_files = @package.doc_files.sort_by { |doc_file| [doc_file.created_at, doc_file.id] }
   %>
@@ -224,7 +230,7 @@
               <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" class="opacity-25" />
               <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
-            <span class="font-medium">Analyzing file...</span>
+            <span class="font-medium"><%= doc_file.analysis_progress_label %></span>
           </span>
         <% elsif file_analysis_failed %>
           <span class="flex items-center gap-1.5 font-medium text-red-700">
@@ -395,7 +401,7 @@
                       <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" class="opacity-25" />
                       <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                     </svg>
-                    <span class="text-sm font-medium">Analyzing file...</span>
+                    <span class="text-sm font-medium"><%= package_analysis_label %></span>
                   </div>
                 <% else %>
                   <%= button_to analyze_package_path(@package),
@@ -450,20 +456,9 @@
         </ul>
       <% end %>
 
-      <% if package_flags.any? %>
-        <section>
-          <h3 class="text-base font-semibold text-neutral-950">Flags</h3>
-          <ol class="mt-3 space-y-3">
-            <% package_flags.each do |flag| %>
-              <% flag_file = flag.clause.doc_file %>
-              <% flag_file_name = flag_file&.file&.attached? ? flag_file.file.filename.to_s : "Untitled file" %>
-              <%= render "components/flag", flag: flag, file_name: flag_file_name %>
-            <% end %>
-          </ol>
-        </section>
-      <% end %>
+      <%= render "packages/active_flags", package: @package %>
 
-      <% if @package.errors[:base].blank? && analysis_required_files.blank? && file_issue_files.blank? && package_flags.blank? %>
+      <% if @package.errors[:base].blank? && analysis_required_files.blank? && file_issue_files.blank? && active_package_flags.blank? %>
         <div class="rounded-md border border-dashed border-neutral-300 px-4 py-12 text-center">
           <p class="text-sm font-medium text-neutral-950">Nothing needs attention</p>
           <p class="mt-1 text-sm text-neutral-500">Failed processing and flags will appear here.</p>

@@ -7,14 +7,20 @@ class PackagesController < ApplicationController
 
   def show
     @package = current_user.packages
-                           .includes(doc_files: [{ clauses: :flags }, { file_attachment: :blob }])
+                           .includes(
+                             { clauses: [ :flags, { doc_file: { file_attachment: :blob } } ] },
+                             doc_files: [{ clauses: :flags }, { file_attachment: :blob }]
+                           )
                            .find(params[:id])
     enqueue_text_extraction_if_needed(@package)
   end
 
   def analysis
     @package = current_user.packages
-                           .includes(doc_files: [{ clauses: :flags }, { file_attachment: :blob }])
+                           .includes(
+                             { clauses: [ :flags, { doc_file: { file_attachment: :blob } } ] },
+                             doc_files: [{ clauses: :flags }, { file_attachment: :blob }]
+                           )
                            .find(params[:id])
   end
 
@@ -70,11 +76,25 @@ class PackagesController < ApplicationController
   def analyze
     @package = current_user.packages.find(params[:id])
 
-    @package.doc_files.where.not(ai_status: "complete").update_all(
-      ai_status: "processing",
-      ai_error: nil,
-      updated_at: Time.current
-    )
+    files_to_analyze = @package.doc_files.where.not(ai_status: "complete").order(:created_at, :id).to_a
+    total_files = files_to_analyze.size
+
+    files_to_analyze.each.with_index(1) do |doc_file, position|
+      initial_stage =
+        if position == 1
+          doc_file.extraction_status == "complete" && doc_file.extracted_text.present? ? "analyzing_clauses" : "extracting_text"
+        else
+          "waiting"
+        end
+
+      doc_file.update!(
+        ai_status: "processing",
+        ai_error: nil,
+        analysis_stage: initial_stage,
+        analysis_position: position,
+        analysis_total: total_files
+      )
+    end
     AnalyzePackageFilesJob.perform_later(@package)
 
     redirect_to @package, notice: "AI analysis started."

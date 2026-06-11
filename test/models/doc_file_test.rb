@@ -66,6 +66,17 @@ class DocFileTest < ActiveSupport::TestCase
     assert_includes doc_file.errors[:ai_status], "is not included in the list"
   end
 
+  test "provides readable analysis progress labels" do
+    doc_file = @package.doc_files.build(
+      analysis_stage: "checking_sources",
+      analysis_position: 2,
+      analysis_total: 3
+    )
+
+    assert_equal "Checking relevant sources", doc_file.analysis_progress_label
+    assert_equal "Analyzing file 2 of 3", doc_file.analysis_batch_label
+  end
+
   test "ready for ai includes only complete files with extracted text" do
     ready_doc_file = create_doc_file(extraction_status: "complete", extracted_text: "Ready text.")
     create_doc_file(extraction_status: "pending", extracted_text: "Pending text.")

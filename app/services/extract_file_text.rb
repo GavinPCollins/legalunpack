@@ -38,7 +38,9 @@ class ExtractFileText
 
   # SAVE EXTRACTED TEXT
   def save!
-    @doc_file.update!(extraction_status: "processing")
+    attributes = { extraction_status: "processing" }
+    attributes[:analysis_stage] = "extracting_text" if @doc_file.ai_status == "processing"
+    @doc_file.update!(attributes)
 
     text = call
 

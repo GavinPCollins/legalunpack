@@ -1,31 +1,11 @@
-<% clause = flag.clause %>
-<% render_context = local_assigns[:render_context] || "action_item" %>
-<% priority_label = flag.level.present? ? "#{flag.level.humanize} priority" : "Review" %>
-<%
-  priority_class =
-    case flag.level
-    when "high"
-      "badge-danger"
-    when "medium"
-      "badge-warning"
-    when "low"
-      "badge-info"
-    else
-      "badge-neutral"
-    end
-%>
-<% drawer_title = capture do %>
-  <span class="flex flex-wrap items-center gap-2">
-    <span><%= flag.name %></span>
-    <span class="pill <%= priority_class %>"><%= priority_label %></span>
-  </span>
-<% end %>
+<% drawer_title = flag_group_title(clause, flags) %>
+<% render_context = local_assigns[:render_context] || "group_item" %>
 
 <%= render layout: "components/drawer",
       locals: {
         controller: "flag-drawer",
         title: drawer_title,
-        title_id: dom_id(flag, :drawer_title),
+        title_id: dom_id(clause, :flag_group_drawer_title),
         subtitle: file_name,
         dialog_class: "fixed inset-0 h-auto max-h-none w-auto max-w-none overflow-hidden bg-transparent backdrop:bg-transparent",
         shell_class: "absolute inset-0 pl-10 focus:outline-none sm:pl-16",
@@ -38,5 +18,9 @@
         close_button_class: "relative rounded-md text-neutral-400 hover:text-neutral-600",
         body_class: "mt-6 flex-1 overflow-y-auto"
       } do %>
-  <%= render "components/flag_detail", flag: flag, render_context: render_context %>
+  <div class="space-y-5">
+    <% flags.each do |flag| %>
+      <%= render "components/flag_group_item", flag: flag, render_context: render_context %>
+    <% end %>
+  </div>
 <% end %>

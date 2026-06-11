@@ -62,7 +62,7 @@
     elsif extraction_status == "failed"
       "Text extraction failed"
     elsif ai_status == "processing"
-      "Generating summary..."
+      doc_file.analysis_progress_label
     elsif extraction_status == "complete" && ai_status == "pending"
       "Ready for analysis"
     else

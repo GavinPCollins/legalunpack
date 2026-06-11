@@ -35,7 +35,7 @@ export default class extends Controller {
             <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" class="opacity-25"></circle>
             <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
           </svg>
-          <span class="text-sm font-medium">Analyzing file...</span>
+          <span class="text-sm font-medium">Preparing analysis...</span>
         </div>
       `
     }

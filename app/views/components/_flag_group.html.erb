@@ -1,0 +1,21 @@
+<%
+  ordered_flags = Array(flags).sort_by { |flag| [flag.resolved? ? 1 : 0, flag.created_at || Time.current, flag.id] }
+  render_context = local_assigns[:render_context] || "group_item"
+  group_file_name =
+    if local_assigns[:file_name].present?
+      local_assigns[:file_name]
+    elsif clause.doc_file&.file&.attached?
+      clause.doc_file.file.filename.to_s
+    else
+      "Untitled file"
+    end
+%>
+
+<li id="<%= dom_id(clause, :flag_group) %>" data-controller="flag-drawer">
+  <%= render "components/flag_group_action_item", clause: clause, flags: ordered_flags %>
+  <%= render "components/flag_group_drawer",
+        clause: clause,
+        flags: ordered_flags,
+        file_name: group_file_name,
+        render_context: render_context %>
+</li>

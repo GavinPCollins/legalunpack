@@ -1,0 +1,10 @@
+<article id="<%= dom_id(flag) %>" class="rounded-md border border-neutral-200 p-4">
+  <header class="mb-5 flex flex-wrap items-center gap-2 border-b border-neutral-200 pb-4">
+    <h3 class="text-sm font-semibold text-neutral-950"><%= flag.name %></h3>
+    <span class="pill <%= flag_priority_class(flag) %>"><%= flag_priority_label(flag) %></span>
+  </header>
+
+  <%= render "components/flag_detail",
+        flag: flag,
+        render_context: local_assigns[:render_context] || "group_item" %>
+</article>
