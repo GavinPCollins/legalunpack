@@ -20,6 +20,9 @@
     <span class="pill <%= priority_class %>"><%= priority_label %></span>
   </span>
 <% end %>
+<% drawer_footer = capture do %>
+  <%= render "components/flag_footer", flag: flag, render_context: render_context %>
+<% end %>
 
 <%= render layout: "components/drawer",
       locals: {
@@ -36,7 +39,9 @@
         subtitle_class: "mt-1 text-sm text-neutral-500",
         close_wrap_class: "",
         close_button_class: "relative rounded-md text-neutral-400 hover:text-neutral-600",
-        body_class: "mt-6 flex-1 overflow-y-auto"
+        body_class: "mt-6 flex-1 overflow-y-auto pb-6",
+        footer: drawer_footer,
+        footer_class: "sticky bottom-0 shrink-0 border-t border-neutral-200 bg-white pt-4"
       } do %>
   <%= render "components/flag_detail", flag: flag, render_context: render_context %>
 <% end %>

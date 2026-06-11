@@ -44,6 +44,20 @@ class DocFilesController < ApplicationController
                         .sort_by { |clause| [clause.position || Float::INFINITY, clause.id] }
   end
 
+  def dismissed_flags
+    @doc_file = DocFile
+                .joins(:package)
+                .where(packages: { user_id: current_user.id })
+                .includes({ clauses: :flags }, file_attachment: :blob, package: {})
+                .find(params[:id])
+    @package = @doc_file.package
+    @dismissed_flags = @doc_file.clauses
+                                .flat_map(&:flags)
+                                .select(&:resolved?)
+                                .sort_by { |flag| [flag.resolved_at || flag.updated_at, flag.id] }
+                                .reverse
+  end
+
   # CODEX file summary updates
   def summary_search
     @query = params[:q].to_s.strip
@@ -81,6 +95,26 @@ class DocFilesController < ApplicationController
     redirect_to doc_file.package, notice: "#{file_name(doc_file)} was replaced with #{file_name(replacement)}."
   rescue ActiveRecord::RecordInvalid => e
     redirect_to doc_file.package, alert: e.record.errors.full_messages.to_sentence
+  end
+
+  def archive
+    doc_file = current_user_doc_files.active.find(params[:id])
+    archived_at = Time.current
+
+    DocFile.transaction do
+      Flag.unresolved
+          .where(clause_id: doc_file.clause_ids)
+          .update_all(
+            resolved: true,
+            resolved_at: archived_at,
+            resolution_note: "file archived",
+            updated_at: archived_at
+          )
+
+      doc_file.update!(archived_at: archived_at)
+    end
+
+    redirect_to doc_file.package, notice: "#{file_name(doc_file)} was archived."
   end
 
   private

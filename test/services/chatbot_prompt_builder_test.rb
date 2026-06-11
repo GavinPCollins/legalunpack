@@ -103,4 +103,40 @@ class ChatbotPromptBuilderTest < ActiveSupport::TestCase
     assert_includes prompt, "[L1] Authorised Version No. 111, 91Z | 91Z Notice of intention to vacate"
     assert_includes prompt, "Victorian Legislation | VIC | act | legislation"
   end
+
+  test "includes flag context when scoped to a flag" do
+    doc_file = @package.doc_files.first
+    clause = doc_file.clauses.create!(
+      package: @package,
+      title: "Payment",
+      content: "Payment is due within 14 days.",
+      summary: "Creates a short payment deadline."
+    )
+    flag = clause.flags.create!(
+      name: "Clarify payment deadline",
+      level: "high",
+      category: "deadline",
+      reason: "The payment deadline may need clarification.",
+      details: "The clause does not explain what happens if payment is delayed.",
+      suggested_action: "Ask whether the deadline can be extended."
+    )
+
+    prompt = ChatbotPromptBuilder.build(
+      @package,
+      question: "What should I ask about?",
+      target: "flag",
+      target_id: flag.id,
+      legal_references: []
+    )
+
+    assert_includes prompt, "Scope: flag"
+    assert_includes prompt, "Flag: Clarify payment deadline"
+    assert_includes prompt, "Flag priority: high"
+    assert_includes prompt, "Flag category: deadline"
+    assert_includes prompt, "Flag summary: The payment deadline may need clarification."
+    assert_includes prompt, "Flag details: The clause does not explain what happens if payment is delayed."
+    assert_includes prompt, "Suggested action: Ask whether the deadline can be extended."
+    assert_includes prompt, "Related file: sample.txt"
+    assert_includes prompt, "Related clause text: Payment is due within 14 days."
+  end
 end

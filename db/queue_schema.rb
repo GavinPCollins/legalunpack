@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_11_180000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_12_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -121,6 +121,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_11_180000) do
     t.string "evidence_basis"
     t.string "level"
     t.string "name", null: false
+    t.text "note"
     t.text "reason"
     t.text "resolution_note"
     t.boolean "resolved", default: false, null: false

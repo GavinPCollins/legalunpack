@@ -22,6 +22,7 @@ class FlagsController < ApplicationController
   end
 
   def render_success(flag, render_context)
+    return render_flag_footer(flag, render_context) if note_update_only?
     return render_package_flags(flag) if render_context == "package_group_item"
     return render_file_flags(flag) if render_context == "file_group_item"
 
@@ -58,6 +59,25 @@ class FlagsController < ApplicationController
     end
   end
 
+  def render_flag_footer(flag, render_context)
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          dom_id(flag, :footer),
+          partial: "components/flag_footer",
+          locals: { flag: flag, render_context: render_context, note_open: true }
+        )
+      end
+      format.html { redirect_back fallback_location: package_path(flag.clause.package), notice: "Flag updated." }
+    end
+  end
+
+  def note_update_only?
+    flag_param_keys = params.fetch(:flag, {}).keys
+
+    flag_param_keys == [ "note" ]
+  end
+
   def render_package_flags(flag)
     package = current_user.packages
                           .includes(
@@ -79,11 +99,6 @@ class FlagsController < ApplicationController
   end
 
   def flag_params
-    permitted_params = params.require(:flag).permit(:resolved, :resolution_note)
-    if ActiveModel::Type::Boolean.new.cast(permitted_params[:resolved]) && permitted_params[:resolution_note].blank?
-      permitted_params[:resolution_note] = "No notes added"
-    end
-
-    permitted_params
+    params.require(:flag).permit(:note, :resolved, :resolution_note)
   end
 end
