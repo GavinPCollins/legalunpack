@@ -48,13 +48,15 @@ module ApplicationHelper
   end
 
   def package_ai_summary_search_match_count(package, query)
-    summary_matches = package.doc_files.sum { |doc_file| ai_summary_match_count(doc_file, query) }
+    summary_matches = package.doc_files.reject(&:archived?).sum { |doc_file| ai_summary_match_count(doc_file, query) }
 
     summary_matches + matching_clause_results(package, query).count
   end
 
   def matching_clause_results(package, query)
     package.clauses.sort_by { |clause| [clause.position || Float::INFINITY, clause.id || 0] }.select do |clause|
+      next false if clause.doc_file&.archived?
+
       [
         clause.title,
         clause.risk_level,

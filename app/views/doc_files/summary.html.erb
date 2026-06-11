@@ -16,11 +16,12 @@
         search_placeholder: "Search this package",
         search_drawer_title: "Package search",
         search_drawer_body: "Press Return to search this package.",
+        show_search_drawer_query: false,
         search_frame_id: "summary_search_results",
         ai_chat_url: package_chatbot_sessions_path(@package),
         overflow_actions: [
           { label: "Rename package", type: :button, data: { action: "modal#open", modal_dialog_param: "rename" } },
-          { label: "Add documents", type: :button, data: { action: "modal#open", modal_dialog_param: "documents" } },
+          { label: "Add files", type: :button, data: { action: "modal#open", modal_dialog_param: "documents" } },
           {
             label: "Delete package",
             path: package_path(@package),
@@ -105,6 +106,7 @@
               <% clause_highlight_query = @highlight_query.present? && (!focused_clause_highlight || @highlight_clause_id == clause.id.to_s) ? @highlight_query : nil %>
               <% clause_title = clause.title.presence || "Untitled clause" %>
               <% clause_summary = clause.summary.presence || "No summary saved." %>
+              <% unresolved_flags = clause.flags.reject(&:resolved?) %>
               <li id="<%= dom_id(clause) %>" class="<%= class_names(
                 "scroll-mt-24 rounded-md border p-4",
                 focused_clause ? "border-cyan-300 bg-cyan-50/40 ring-2 ring-cyan-100" : "border-neutral-200"
@@ -114,9 +116,9 @@
                     <%= clause.position %>. <%= clause_highlight_query.present? ? highlighted_summary_text(clause_title, clause_highlight_query) : clause_title %>
                   </p>
 
-                  <% if clause.flags.any? %>
+                  <% if unresolved_flags.any? %>
                     <div class="flex shrink-0 flex-wrap items-center justify-end gap-1">
-                      <% clause.flags.each do |flag| %>
+                      <% unresolved_flags.each do |flag| %>
                         <%= render "components/flag_icon_trigger", flag: flag, file_name: file_title %>
                       <% end %>
                     </div>

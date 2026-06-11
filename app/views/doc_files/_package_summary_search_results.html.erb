@@ -7,7 +7,7 @@
   <% end %>
 
   <% if package.present? %>
-    <% ai_summary_matches = package.doc_files.select { |doc_file| ai_summary_match_count(doc_file, query).positive? } %>
+    <% ai_summary_matches = package.doc_files.reject(&:archived?).select { |doc_file| ai_summary_match_count(doc_file, query).positive? } %>
     <% clause_matches = matching_clause_results(package, query) %>
     <% match_count = package_ai_summary_search_match_count(package, query) %>
 
@@ -29,7 +29,7 @@
             <p class="text-sm font-semibold text-neutral-950">
               <%= highlighted_search_text(clause.title.presence || "Untitled clause", query) %>
             </p>
-            <% clause.flags.each do |flag| %>
+            <% clause.flags.reject(&:resolved?).each do |flag| %>
               <%= render "components/flag_icon_trigger",
                     flag: flag,
                     file_name: clause.doc_file&.file&.attached? ? clause.doc_file.file.filename.to_s : "Untitled file" %>
@@ -82,14 +82,17 @@
   <% elsif query.present? %>
     <div class="mt-4 rounded-md border border-dashed border-neutral-300 px-4 py-10 text-center">
       <p class="text-sm font-medium text-neutral-950">No matching package results</p>
-      <p class="mt-1 text-sm text-neutral-500">Try another word or phrase from this package.</p>
+      <p class="mt-1 text-sm text-neutral-500">Check your spelling, or try another word or phrase.</p>
       <% if local_assigns[:search_package].present? %>
-        <button type="button"
-                class="mt-4 rounded-md border border-cyan-200 bg-white px-3 py-2 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-50 hover:text-cyan-950"
-                data-action="search-drawer#close ai-chat-drawer#ask"
-                data-ai-chat-drawer-question-param="<%= failed_package_search_ai_question(query) %>">
-          Ask AI for help
-        </button>
+        <p class="mt-4 text-sm text-neutral-600">
+          Alternatively,
+          <button type="button"
+                  class="font-semibold text-cyan-800 transition hover:text-cyan-950"
+                  data-action="search-drawer#close ai-chat-drawer#ask"
+                  data-ai-chat-drawer-question-param="<%= failed_package_search_ai_question(query) %>">
+            ask our AI assistant for help
+          </button>.
+        </p>
       <% end %>
     </div>
   <% else %>

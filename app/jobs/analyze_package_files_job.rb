@@ -3,7 +3,7 @@ class AnalyzePackageFilesJob < ApplicationJob
 
   def perform(package)
     # Analyze every file in the package that has not already completed AI analysis.
-    files = package.doc_files.where.not(ai_status: "complete").order(:analysis_position, :created_at, :id)
+    files = package.doc_files.active.where.not(ai_status: "complete").order(:analysis_position, :created_at, :id)
 
     files.each do |doc_file|
       stage = ready_for_analysis?(doc_file) ? "analyzing_clauses" : "extracting_text"

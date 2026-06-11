@@ -1,5 +1,7 @@
 <%
   active_flag_groups = package.clauses.filter_map do |clause|
+    next if clause.doc_file&.archived?
+
     active_flags = clause.flags.reject(&:resolved?)
     [ clause, active_flags ] if active_flags.any?
   end

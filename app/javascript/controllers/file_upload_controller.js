@@ -2,6 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["input", "list", "dropzone"]
+  static values = { multiple: { type: Boolean, default: true } }
 
   connect() {
     this.selectedFiles = []
@@ -27,7 +28,8 @@ export default class extends Controller {
   }
 
   addFiles(files) {
-    this.selectedFiles = this.selectedFiles.concat(Array.from(files))
+    const incomingFiles = Array.from(files)
+    this.selectedFiles = this.multipleValue ? this.selectedFiles.concat(incomingFiles) : incomingFiles.slice(0, 1)
     this.syncInput()
     this.render()
     this.element.dispatchEvent(new CustomEvent("file-upload:changed", {

@@ -11,7 +11,7 @@ class ChatbotPromptBuilder
 
     case target.to_s
     when "doc_file"
-      doc = package.doc_files.find_by(id: target_id)
+      doc = package.doc_files.active.find_by(id: target_id)
       context_parts << doc.extracted_text.to_s if doc&.extraction_status == "complete"
     when "clause"
       clause = package.clauses.find_by(id: target_id)
@@ -19,7 +19,7 @@ class ChatbotPromptBuilder
       context_parts << clause.summary.to_s if clause&.summary.present?
     else
       # package-wide: include all completed extracted_text
-      texts = package.doc_files.where(extraction_status: "complete").pluck(:extracted_text)
+      texts = package.doc_files.active.where(extraction_status: "complete").pluck(:extracted_text)
       context_parts.concat(texts.compact)
     end
 

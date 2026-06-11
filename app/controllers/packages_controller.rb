@@ -9,7 +9,11 @@ class PackagesController < ApplicationController
     @package = current_user.packages
                            .includes(
                              { clauses: [ :flags, { doc_file: { file_attachment: :blob } } ] },
-                             doc_files: [{ clauses: :flags }, { file_attachment: :blob }]
+                             doc_files: [
+                               { clauses: :flags },
+                               { file_attachment: :blob },
+                               { replaced_by_doc_file: { file_attachment: :blob } }
+                             ]
                            )
                            .find(params[:id])
     enqueue_text_extraction_if_needed(@package)
@@ -76,7 +80,7 @@ class PackagesController < ApplicationController
   def analyze
     @package = current_user.packages.find(params[:id])
 
-    files_to_analyze = @package.doc_files.where.not(ai_status: "complete").order(:created_at, :id).to_a
+    files_to_analyze = @package.doc_files.active.where.not(ai_status: "complete").order(:created_at, :id).to_a
     total_files = files_to_analyze.size
 
     files_to_analyze.each.with_index(1) do |doc_file, position|
@@ -147,7 +151,7 @@ class PackagesController < ApplicationController
   end
 
   def enqueue_text_extraction_if_needed(package)
-    return unless package.doc_files.needs_text_extraction.exists?
+    return unless package.doc_files.active.needs_text_extraction.exists?
 
     ExtractPackageTextJob.perform_later(package)
   end
