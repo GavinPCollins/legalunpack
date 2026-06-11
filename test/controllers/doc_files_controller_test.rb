@@ -194,6 +194,40 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     assert_select "li##{dom_id(clause)} mark[data-summary-highlight-target='match']", text: /payment/i
   end
 
+  test "should only highlight selected clause when opened from package search" do
+    doc_file = @package.doc_files.create!(
+      ai_summary: "This payment summary should stay plain.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    selected_clause = doc_file.clauses.create!(
+      package: @package,
+      title: "Payment",
+      content: "Payment is due within 14 days.",
+      summary: "Sets a payment deadline.",
+      position: 1
+    )
+    other_clause = doc_file.clauses.create!(
+      package: @package,
+      title: "Other payment",
+      content: "Another payment reference.",
+      summary: "Also mentions payment.",
+      position: 2
+    )
+
+    get summary_doc_file_url(
+      doc_file,
+      highlight: "payment",
+      highlight_clause_id: selected_clause.id,
+      anchor: dom_id(selected_clause)
+    )
+
+    assert_response :success
+    assert_select "div#file-summary mark[data-summary-highlight-target='match']", count: 0
+    assert_select "li##{dom_id(selected_clause)}.border-cyan-300"
+    assert_select "li##{dom_id(selected_clause)} mark[data-summary-highlight-target='match']", text: /payment/i
+    assert_select "li##{dom_id(other_clause)} mark[data-summary-highlight-target='match']", count: 0
+  end
+
   test "should highlight requested summary text" do
     doc_file = @package.doc_files.create!(
       ai_summary: "This file sets payment obligations.",
@@ -205,8 +239,8 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "div#file-summary"
     assert_select "mark[data-summary-highlight-target='match']", text: /payment/i
-    assert_select "button[data-action='summary-highlight#previous']", text: "Previous match"
-    assert_select "button[data-action='summary-highlight#next']", text: "Next match"
+    assert_select "button[data-action='summary-highlight#previous']", count: 0
+    assert_select "button[data-action='summary-highlight#next']", count: 0
   end
 
   test "should not get summary for another user's doc file" do
@@ -361,7 +395,14 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
         assert_select "p", text: "sample.txt"
       end
       clause_path = summary_doc_file_path(doc_file, highlight: "repair", anchor: dom_id(clause))
-      assert_select "a[href='#{clause_path}']", text: "Open clause"
+      focused_clause_path = summary_doc_file_path(
+        doc_file,
+        highlight: "repair",
+        highlight_clause_id: clause.id,
+        anchor: dom_id(clause)
+      )
+      assert_select "a[href='#{focused_clause_path}']", text: "Open clause"
+      assert_select "a[href='#{clause_path}']", text: "Open clause", count: 0
       summary_path = summary_doc_file_path(doc_file, highlight: "repair", anchor: "file-summary")
       assert_select "a[href='#{summary_path}']" do
         assert_select "p", text: /AI summary match/

@@ -29,6 +29,7 @@ class DocFilesController < ApplicationController
                 .find(params[:id])
     @package = @doc_file.package
     @highlight_query = params[:highlight].to_s.strip
+    @highlight_clause_id = params[:highlight_clause_id].to_s
   end
 
   def flags
