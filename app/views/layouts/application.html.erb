@@ -68,9 +68,11 @@
           <% end %>
         </header>
 
-        <main class="app-shell">
+        <% show_legal_disclaimer = defined?(@package) && @package&.persisted? %>
+        <main class="<%= class_names("app-shell", "pb-14": show_legal_disclaimer) %>">
           <%= render "components/flash_messages" %>
           <%= yield %>
+          <%= render "components/legal_disclaimer_footer" if show_legal_disclaimer %>
         </main>
       </div>
 

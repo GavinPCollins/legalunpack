@@ -1,5 +1,5 @@
 <% drawer_title = local_assigns[:drawer_title] || "AI chat" %>
-<% drawer_body = local_assigns[:drawer_body] || "Ask a question about this package. Chat responses will appear here once the chat action is connected." %>
+<% drawer_body = local_assigns[:drawer_body] || "Our assistant provides information only and does not constitute legal advice." %>
 <% messages = local_assigns[:messages] || [
   {
     partial: "components/ai_chat/ai_output1",
@@ -44,6 +44,8 @@
         controller: "ai-chat-drawer",
         title: drawer_title,
         title_id: "ai-chat-drawer-title",
+        subtitle: drawer_body,
+        subtitle_class: "mt-1 text-sm italic text-neutral-500",
         footer: drawer_footer
       } do %>
   <div class="ai-chat-thread" aria-live="polite" data-ai-chat-drawer-target="thread">

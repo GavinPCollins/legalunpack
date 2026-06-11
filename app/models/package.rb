@@ -7,6 +7,7 @@ class Package < ApplicationRecord
   belongs_to :user
 
   has_many :doc_files, dependent: :destroy
+  has_many :active_doc_files, -> { active }, class_name: "DocFile"
   has_many :clauses, dependent: :destroy
   has_many :file_blobs, through: :doc_files, source: :file_blob
   has_many :chat_messages, dependent: :destroy
@@ -21,7 +22,10 @@ class Package < ApplicationRecord
     left_joins(:doc_files)
       .joins(package_file_attachment_join_sql)
       .joins(package_file_blob_join_sql)
-      .where("packages.name ILIKE :query OR package_file_blobs.filename ILIKE :query", query: match_query)
+      .where(
+        "packages.name ILIKE :query OR (doc_files.archived_at IS NULL AND package_file_blobs.filename ILIKE :query)",
+        query: match_query
+      )
       .distinct
   end
 
@@ -56,16 +60,16 @@ class Package < ApplicationRecord
 
   # CHECK EXTRACTION COMPLETE
   def extraction_complete?
-    doc_files.any? && doc_files.all? { |doc_file| doc_file.extraction_status == "complete" }
+    active_doc_files.any? && active_doc_files.all? { |doc_file| doc_file.extraction_status == "complete" }
   end
 
   # CHECK EXTRACTION FAILED
   def extraction_failed?
-    doc_files.any? { |doc_file| doc_file.extraction_status == "failed" }
+    active_doc_files.any? { |doc_file| doc_file.extraction_status == "failed" }
   end
 
   # CHECK EXTRACTION IN PROGRESS
   def extraction_in_progress?
-    doc_files.any? { |doc_file| %w[pending processing].include?(doc_file.extraction_status) }
+    active_doc_files.any? { |doc_file| %w[pending processing].include?(doc_file.extraction_status) }
   end
 end

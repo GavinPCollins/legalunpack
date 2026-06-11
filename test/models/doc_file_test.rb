@@ -54,6 +54,67 @@ class DocFileTest < ActiveSupport::TestCase
     assert_equal "pending", doc_file.ai_status
   end
 
+  test "files are active by default and can be archived" do
+    active_doc_file = create_doc_file(extraction_status: "complete", extracted_text: "Current file.")
+    archived_doc_file = create_doc_file(extraction_status: "complete", extracted_text: "Old file.")
+    archived_doc_file.update!(archived_at: Time.current)
+
+    assert active_doc_file.active?
+    assert_not archived_doc_file.active?
+    assert_equal [ active_doc_file ], @package.doc_files.active.to_a
+    assert_equal [ archived_doc_file ], @package.doc_files.archived.to_a
+  end
+
+  test "archived file can reference an active replacement in the same package" do
+    archived_doc_file = create_doc_file(extraction_status: "complete", extracted_text: "Old file.")
+    replacement = create_doc_file(extraction_status: "complete", extracted_text: "Replacement file.")
+
+    assert archived_doc_file.update(archived_at: Time.current, replaced_by_doc_file: replacement)
+    assert_equal replacement, archived_doc_file.replaced_by_doc_file
+    assert_includes replacement.replaced_doc_files, archived_doc_file
+  end
+
+  test "replacement must be a different active file in the same package" do
+    archived_doc_file = create_doc_file(extraction_status: "complete", extracted_text: "Old file.")
+    archived_doc_file.archived_at = Time.current
+    archived_doc_file.replaced_by_doc_file = archived_doc_file
+
+    assert_not archived_doc_file.valid?
+    assert_includes archived_doc_file.errors[:replaced_by_doc_file], "cannot be the same file"
+
+    other_user = User.create!(email: "replacement@example.com", password: "password", username: "replacement")
+    other_package = other_user.packages.create!(name: "Other package")
+    other_file = other_package.doc_files.create!(
+      file: {
+        io: StringIO.new("Other file."),
+        filename: "other.txt",
+        content_type: "text/plain"
+      }
+    )
+    archived_doc_file.replaced_by_doc_file = other_file
+
+    assert_not archived_doc_file.valid?
+    assert_includes archived_doc_file.errors[:replaced_by_doc_file], "must belong to the same package"
+
+    archived_replacement = create_doc_file(extraction_status: "complete", extracted_text: "Archived replacement.")
+    archived_replacement.update!(archived_at: Time.current)
+    archived_doc_file.replaced_by_doc_file = archived_replacement
+
+    assert_not archived_doc_file.valid?
+    assert_includes archived_doc_file.errors[:replaced_by_doc_file], "must be active"
+  end
+
+  test "replacement cannot create a circular chain" do
+    first_file = create_doc_file(extraction_status: "complete", extracted_text: "First file.")
+    second_file = create_doc_file(extraction_status: "complete", extracted_text: "Second file.")
+    first_file.update!(archived_at: Time.current, replaced_by_doc_file: second_file)
+    second_file.archived_at = Time.current
+    second_file.replaced_by_doc_file = first_file
+
+    assert_not second_file.valid?
+    assert_includes second_file.errors[:replaced_by_doc_file], "would create a circular replacement chain"
+  end
+
   test "ai status must be valid" do
     doc_file = @package.doc_files.build(ai_status: "queued")
     doc_file.file.attach(
@@ -64,6 +125,17 @@ class DocFileTest < ActiveSupport::TestCase
 
     assert_not doc_file.valid?
     assert_includes doc_file.errors[:ai_status], "is not included in the list"
+  end
+
+  test "provides readable analysis progress labels" do
+    doc_file = @package.doc_files.build(
+      analysis_stage: "checking_sources",
+      analysis_position: 2,
+      analysis_total: 3
+    )
+
+    assert_equal "Checking relevant sources", doc_file.analysis_progress_label
+    assert_equal "Analyzing file 2 of 3", doc_file.analysis_batch_label
   end
 
   test "ready for ai includes only complete files with extracted text" do

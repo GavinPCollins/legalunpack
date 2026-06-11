@@ -43,8 +43,8 @@ class AnalyzeDocFileWithAiTest < ActiveSupport::TestCase
     assert_equal "low", result.dig("clauses", 0, "risk_level")
     assert_equal true, captured_json_response
     assert_includes captured_prompt, "micro_summary"
-    assert_includes captured_prompt, "suggested_action"
-    assert_includes captured_prompt, "deadline|missing_information|negotiation_point"
+    assert_includes captured_prompt, "candidate_concerns"
+    assert_includes captured_prompt, "routine or market-standard obligations"
     assert_includes captured_prompt, "Payment is due within 14 days."
   ensure
     AiClient.define_singleton_method(:call, original_ai_call) if original_ai_call
@@ -68,13 +68,10 @@ class AnalyzeDocFileWithAiTest < ActiveSupport::TestCase
           content: "Payment is due within 14 days.",
           risk_level: "low",
           summary: "Sets a short payment deadline.",
-          flags: [
+          candidate_concerns: [
             {
               name: "Clarify payment deadline",
-              reason: "The timeframe may require follow-up.",
-              level: "medium",
-              category: "deadline",
-              suggested_action: "Ask whether the payment deadline can be extended."
+              reason: "The payment deadline may be too short and requires confirmation."
             }
           ]
         },
@@ -83,15 +80,30 @@ class AnalyzeDocFileWithAiTest < ActiveSupport::TestCase
           content: "Either party may terminate with notice.",
           risk_level: "medium",
           summary: "Allows termination after notice.",
-          flags: []
+          candidate_concerns: []
         }
       ]
     }.to_json
 
-    stub_ai_response(raw_response) do
-      assert_difference("Clause.count", 2) do
-        assert_difference("Flag.count", 1) do
-          AnalyzeDocFileWithAi.save!(@doc_file)
+    reviewed_flag = ReviewClauseFlagsWithAi::ReviewedFlag.new(
+      attributes: {
+        name: "Clarify payment deadline",
+        reason: "The payment deadline may be too short and requires confirmation.",
+        details: "The clause requires payment within 14 days. Confirming whether this timeframe is practical can prevent an avoidable breach.",
+        level: "medium",
+        category: "deadline",
+        evidence_basis: "commercial_risk",
+        suggested_action: "Ask whether the payment deadline can be extended."
+      },
+      legal_references: []
+    )
+
+    stub_flag_review([ reviewed_flag ], []) do
+      stub_ai_response(raw_response) do
+        assert_difference("Clause.count", 2) do
+          assert_difference("Flag.count", 1) do
+            AnalyzeDocFileWithAi.save!(@doc_file)
+          end
         end
       end
     end
@@ -104,9 +116,11 @@ class AnalyzeDocFileWithAiTest < ActiveSupport::TestCase
     assert_equal "Sets a short payment deadline.", first_clause.summary
     assert_equal 1, first_clause.position
     assert_equal "Clarify payment deadline", first_clause.flags.first.name
-    assert_equal "The timeframe may require follow-up.", first_clause.flags.first.reason
+    assert_equal "The payment deadline may be too short and requires confirmation.", first_clause.flags.first.reason
+    assert_equal "The clause requires payment within 14 days. Confirming whether this timeframe is practical can prevent an avoidable breach.", first_clause.flags.first.details
     assert_equal "medium", first_clause.flags.first.level
     assert_equal "deadline", first_clause.flags.first.category
+    assert_equal "commercial_risk", first_clause.flags.first.evidence_basis
     assert_equal "Ask whether the payment deadline can be extended.", first_clause.flags.first.suggested_action
     assert_equal "Termination", second_clause.title
     assert_equal "medium", second_clause.risk_level
@@ -119,6 +133,7 @@ class AnalyzeDocFileWithAiTest < ActiveSupport::TestCase
     assert_equal "Payment and termination obligations.", @doc_file.ai_micro_summary
     assert_nil @doc_file.ai_error
     assert_not_nil @doc_file.ai_processed_at
+    assert_nil @doc_file.analysis_stage
   end
 
   test "replaces existing clauses when saving analysis again" do
@@ -165,6 +180,7 @@ class AnalyzeDocFileWithAiTest < ActiveSupport::TestCase
     assert_equal "failed", @doc_file.ai_status
     assert_includes @doc_file.ai_error, "unexpected"
     assert_nil @doc_file.ai_processed_at
+    assert_nil @doc_file.analysis_stage
   end
 
   private
@@ -178,5 +194,16 @@ class AnalyzeDocFileWithAiTest < ActiveSupport::TestCase
     yield
   ensure
     AiClient.define_singleton_method(:call, original_ai_call) if original_ai_call
+  end
+
+  def stub_flag_review(*responses)
+    original_review_call = ReviewClauseFlagsWithAi.method(:call)
+    ReviewClauseFlagsWithAi.define_singleton_method(:call) do |_clause_data, **|
+      responses.shift || []
+    end
+
+    yield
+  ensure
+    ReviewClauseFlagsWithAi.define_singleton_method(:call, original_review_call) if original_review_call
   end
 end

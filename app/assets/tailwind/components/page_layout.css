@@ -5,11 +5,11 @@
    - sidebar is fixed from lg upward.
    - app shell starts after the sidebar and fills the remaining width. */
 .side-nav-desktop {
-  @apply hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col;
+  @apply hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-60 lg:flex-col;
 }
 
 .app-shell {
-  @apply min-w-0 w-full lg:ml-72 lg:w-[calc(100%-18rem)];
+  @apply flex min-h-[calc(100vh-3.75rem)] min-w-0 w-full flex-col lg:ml-60 lg:min-h-screen lg:w-[calc(100%-15rem)];
 }
 /* Mobile layout:
    - top bar is visible below lg and owns the drawer trigger.

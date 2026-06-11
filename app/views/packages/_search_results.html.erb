@@ -14,7 +14,7 @@
                 <p class="truncate text-sm font-semibold text-neutral-950">
                   <%= highlighted_search_text(package.name.presence || "Untitled package", query) %>
                 </p>
-                <% filenames = package.doc_files.filter_map { |doc_file| doc_file.file.filename.to_s if doc_file.file.attached? } %>
+                <% filenames = package.doc_files.reject(&:archived?).filter_map { |doc_file| doc_file.file.filename.to_s if doc_file.file.attached? } %>
                 <% if filenames.any? %>
                   <p class="mt-1 truncate text-sm text-neutral-500">
                     <%= safe_join(filenames.map { |filename| highlighted_search_text(filename, query) }, ", ") %>

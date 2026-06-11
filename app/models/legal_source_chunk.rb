@@ -5,6 +5,7 @@ class LegalSourceChunk < ApplicationRecord
 
   belongs_to :legal_source
   has_many :chat_message_legal_references, dependent: :destroy
+  has_many :flag_legal_references, dependent: :destroy
 
   validates :content, presence: true
   validates :position, presence: true, numericality: { only_integer: true, greater_than: 0 }

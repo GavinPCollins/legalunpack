@@ -106,6 +106,20 @@ class AnalyzePackageFilesJobTest < ActiveJob::TestCase
     assert_equal [ @ready_doc_file.id, @pending_doc_file.id, @blank_doc_file.id, second_ready_doc_file.id ], analyzed_ids
   end
 
+  test "advances each file from waiting before analysis" do
+    observed_stages = {}
+
+    stub_analyzer(lambda do |doc_file|
+      observed_stages[doc_file.id] = doc_file.reload.analysis_stage
+    end) do
+      AnalyzePackageFilesJob.perform_now(@package)
+    end
+
+    assert_equal "analyzing_clauses", observed_stages.fetch(@ready_doc_file.id)
+    assert_equal "analyzing_clauses", observed_stages.fetch(@pending_doc_file.id)
+    assert_equal "analyzing_clauses", observed_stages.fetch(@blank_doc_file.id)
+  end
+
   private
 
   def create_doc_file(filename:, extracted_text:, extraction_status:, ai_status: "pending")

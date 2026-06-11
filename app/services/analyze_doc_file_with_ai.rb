@@ -26,7 +26,11 @@ class AnalyzeDocFileWithAi
   end
 
   def save!
-    @doc_file.update!(ai_status: "processing")
+    @doc_file.update_columns(
+      ai_status: "processing",
+      analysis_stage: "analyzing_clauses",
+      updated_at: Time.current
+    )
 
     persist_analysis!(call)
   rescue StandardError => e
@@ -38,10 +42,15 @@ class AnalyzeDocFileWithAi
   private
 
   def persist_analysis!(result)
+    reviewed_clauses = Array(result["clauses"]).map do |clause_data|
+      [ clause_data, review_flags_for(clause_data) ]
+    end
+    @doc_file.update_columns(analysis_stage: "preparing_results", updated_at: Time.current)
+
     Clause.transaction do
       @doc_file.clauses.destroy_all
-      Array(result["clauses"]).each.with_index(1) do |clause_data, position|
-        create_clause_from_analysis(clause_data, position)
+      reviewed_clauses.each.with_index(1) do |(clause_data, reviewed_flags), position|
+        create_clause_from_analysis(clause_data, reviewed_flags, position)
       end
       mark_analysis_complete!(result)
     end
@@ -53,7 +62,8 @@ class AnalyzeDocFileWithAi
       ai_micro_summary: result["micro_summary"].presence || result["summary"],
       ai_status: "complete",
       ai_error: nil,
-      ai_processed_at: Time.current
+      ai_processed_at: Time.current,
+      analysis_stage: nil
     )
   end
 
@@ -61,11 +71,12 @@ class AnalyzeDocFileWithAi
     @doc_file.update!(
       ai_status: "failed",
       ai_error: error.message,
-      ai_processed_at: nil
+      ai_processed_at: nil,
+      analysis_stage: nil
     )
   end
 
-  def create_clause_from_analysis(clause_data, position)
+  def create_clause_from_analysis(clause_data, reviewed_flags, position)
     clause = @doc_file.clauses.create!(
       package: @doc_file.package,
       title: clause_data["title"],
@@ -75,29 +86,26 @@ class AnalyzeDocFileWithAi
       position: position
     )
 
-    create_flags_for(clause, clause_data["flags"])
+    create_reviewed_flags_for(clause, reviewed_flags)
   end
 
-  def create_flags_for(clause, flags_data)
-    Array(flags_data).each do |flag_data|
-      next if flag_data["name"].blank?
+  def review_flags_for(clause_data)
+    ReviewClauseFlagsWithAi.call(
+      clause_data,
+      on_stage: ->(stage) {
+        @doc_file.update_columns(analysis_stage: stage, updated_at: Time.current)
+      }
+    )
+  end
 
-      clause.flags.create!(
-        name: flag_data["name"],
-        reason: flag_data["reason"],
-        level: flag_level(flag_data["level"]),
-        category: flag_category(flag_data["category"]),
-        suggested_action: flag_data["suggested_action"]
-      )
+  def create_reviewed_flags_for(clause, reviewed_flags)
+    reviewed_flags.each do |reviewed_flag|
+      flag = clause.flags.create!(reviewed_flag.attributes)
+
+      reviewed_flag.legal_references.each do |reference|
+        flag.flag_legal_references.create!(legal_source_chunk: reference.chunk)
+      end
     end
-  end
-
-  def flag_level(value)
-    value if Flag::LEVELS.include?(value)
-  end
-
-  def flag_category(value)
-    value if Flag::CATEGORIES.include?(value)
   end
 
   def prompt
@@ -112,30 +120,23 @@ class AnalyzeDocFileWithAi
             "content": "string",
             "risk_level": "low|medium|high",
             "summary": "string",
-            "flags": [
+            "candidate_concerns": [
               {
                 "name": "string",
-                "reason": "string",
-                "level": "low|medium|high",
-                "category": "deadline|missing_information|negotiation_point|legal_review|document_check|commercial_decision|unclear_term",
-                "suggested_action": "string"
+                "reason": "A concise description of a possible material concern to review."
               }
             ]
           }
         ]
       }
 
-      Identify clauses that may be important for the document owner to understand or act on.
+      Identify and accurately extract the meaningful clauses in the document.
       Use risk_level to describe the seriousness of the clause itself.
 
-      Do not create a flag merely because a clause is high risk.
-      A high-risk clause should draw attention to a potentially serious issue, but it does not automatically require a flag.
-
-      Add flags only where the clause requires a concrete follow-up action, clarification, deadline tracking, document check, review, or unresolved decision.
-      Use flag level to describe the urgency or priority of that follow-up action.
-      Use flag category to describe the type of follow-up.
-      Use suggested_action to give the document owner one concrete next step.
-      For clauses that do not require concrete follow-up, return an empty flags array, even if the clause is high risk.
+      Candidate concerns are provisional inputs for a separate conservative review. Include a candidate only when the wording may create material legal, financial, liability, privacy, operational, termination, enforceability, or unusually one-sided risk.
+      Do not add candidates for routine or market-standard obligations, ordinary administrative steps, or clauses that are merely important to understand.
+      Consolidate closely related possible concerns. Keep independent concerns separate.
+      Return an empty candidate_concerns array when the clause appears ordinary or no plausible material concern is apparent.
 
       Document text:
       #{@doc_file.extracted_text}

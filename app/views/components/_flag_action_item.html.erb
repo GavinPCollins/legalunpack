@@ -1,6 +1,4 @@
-<% micro_details = [] %>
-<% micro_details << flag.category.humanize if flag.category.present? %>
-<% micro_details << (flag.resolved? ? "Resolved" : "Open") %>
+<% short_summary = flag.reason.presence || flag.clause.summary.presence %>
 <% priority_label = flag.level.present? ? "#{flag.level.humanize} priority" : "Review" %>
 <%
   priority_class =
@@ -16,20 +14,15 @@
     end
 %>
 
-<article class="flex items-center justify-between gap-4 rounded-md border border-neutral-200 bg-white px-4 py-3">
+<article class="flex items-end justify-between gap-4 rounded-md border border-neutral-200 bg-white px-4 py-3">
   <div class="min-w-0">
-    <div class="flex flex-wrap items-center gap-2">
-      <h3 class="break-words text-sm font-semibold text-neutral-950"><%= flag.name %></h3>
+    <h3 class="break-words text-sm font-semibold text-neutral-950"><%= flag.name %></h3>
+    <div class="mt-2 flex flex-wrap items-center gap-2">
       <span class="pill <%= priority_class %>"><%= priority_label %></span>
     </div>
-    <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-neutral-500">
-      <% micro_details.each_with_index do |detail, index| %>
-        <% if index.positive? %>
-          <span aria-hidden="true" class="text-neutral-300">/</span>
-        <% end %>
-        <span><%= detail %></span>
-      <% end %>
-    </p>
+    <% if short_summary.present? %>
+      <p class="mt-1 text-sm leading-5 text-neutral-600"><%= short_summary %></p>
+    <% end %>
   </div>
 
   <button type="button"

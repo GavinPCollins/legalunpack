@@ -13,6 +13,7 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
   test "should get index" do
     get packages_url
     assert_response :success
+    assert_select "footer", text: /not a substitute for professional legal advice/, count: 0
 
     assert_select "turbo-frame#package_search_results" do |frame|
       assert_empty frame.first.text.strip
@@ -219,11 +220,110 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should get show" do
+    @package.doc_files.create!(file: fixture_file_upload("sample.txt", "text/plain"))
+
     get package_url(@package)
 
     assert_response :success
+    assert_select "[data-search-drawer-target='queryText']", count: 0
+    assert_select "dialog[data-ai-chat-drawer-target='dialog']" do
+      assert_select "h2", text: "AI chat"
+      assert_select "p", text: "Our assistant provides information only and does not constitute legal advice."
+    end
+    assert_select "footer p.italic", text: "Legal Unpack is designed to help you understand and assess documents. It is not a substitute for professional legal advice."
     assert_select "form[action='#{package_path(@package)}'][method='post'] button", text: "Delete package" do |buttons|
       assert buttons.size >= 2, "expected at least 2 Delete package buttons, found #{buttons.size}"
+    end
+    assert_select "button[data-modal-dialog-param^='replace-file-']", text: "Replace file"
+    assert_select "form[action^='/doc_files/'][action$='/replace']" do
+      assert_select "input[type='file'][name='replacement_file'][required]", count: 1
+      assert_select "input[type='submit'][value='Confirm replacement']", count: 1
+    end
+  end
+
+  test "package page groups archived files below active files and shows their replacement" do
+    archived_at = Time.zone.local(2026, 6, 10, 12)
+    archived_file = @package.doc_files.create!(
+      archived_at: archived_at,
+      file: {
+        io: StringIO.new("Old terms."),
+        filename: "old-terms.txt",
+        content_type: "text/plain"
+      }
+    )
+    replacement = @package.doc_files.create!(
+      file: {
+        io: StringIO.new("New terms."),
+        filename: "new-terms.txt",
+        content_type: "text/plain"
+      }
+    )
+    archived_file.update!(replaced_by_doc_file: replacement)
+
+    get package_url(@package)
+
+    assert_response :success
+    assert_select "a", text: "old-terms.txt", count: 0
+    assert_select "a", text: "new-terms.txt"
+    assert_select "p", text: "1 active file"
+    assert_select "details[data-archived-files]" do
+      assert_select "summary", text: /Archived files \(1\)/
+      assert_select "time[datetime='#{archived_at.iso8601}']", text: archived_at.to_date.to_fs(:long)
+      assert_select "p", text: "old-terms.txt"
+      assert_select "p", text: /replaced with new-terms\.txt/
+      assert_select "a[aria-label='Download old-terms.txt'].text-neutral-700" do
+        assert_select "svg.size-5"
+      end
+      assert_select "a", text: "Download", count: 0
+    end
+  end
+
+  test "package page does not show archived files section without archived files" do
+    @package.doc_files.create!(file: fixture_file_upload("sample.txt", "text/plain"))
+
+    get package_url(@package)
+
+    assert_response :success
+    assert_select "summary", text: /Archived files/, count: 0
+  end
+
+  test "package page shows archived files when there are no active files" do
+    @package.doc_files.create!(
+      archived_at: Time.current,
+      file: {
+        io: StringIO.new("Old terms."),
+        filename: "old-terms.txt",
+        content_type: "text/plain"
+      }
+    )
+
+    get package_url(@package)
+
+    assert_response :success
+    assert_select "p", text: "No active files"
+    assert_select "summary", text: /Archived files \(1\)/
+    assert_select "p", text: "old-terms.txt"
+  end
+
+  test "need attention ignores unresolved flags from archived files" do
+    archived_file = @package.doc_files.create!(
+      archived_at: Time.current,
+      ai_status: "complete",
+      file: {
+        io: StringIO.new("Old terms."),
+        filename: "old-terms.txt",
+        content_type: "text/plain"
+      }
+    )
+    clause = archived_file.clauses.create!(package: @package, title: "Old payment term")
+    clause.flags.create!(name: "Old unresolved concern", level: "high")
+
+    get package_url(@package)
+
+    assert_response :success
+    assert_select "#package-active-flags" do
+      assert_select "h3", text: /Unresolved Flag/, count: 0
+      assert_select "article", text: /Old unresolved concern/, count: 0
     end
   end
 
@@ -237,7 +337,11 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
       title: "Payment",
       risk_level: "low"
     )
-    clause.flags.create!(name: "Clarify payment deadline", level: "high")
+    clause.flags.create!(
+      name: "Clarify payment deadline",
+      reason: "The payment deadline may need clarification.",
+      level: "high"
+    )
 
     get package_url(@package)
 
@@ -246,17 +350,79 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
       assert_select "svg"
       assert_select "span", text: "1"
     end
-    assert_select "h3", text: "Flags"
-    assert_select "li##{dom_id(clause.flags.first)}" do
+    assert_select "#package-active-flags h3", text: "1 Unresolved Flag"
+    assert_select "li##{dom_id(clause, :flag_group)}" do
       assert_select "h3", text: "Clarify payment deadline"
+      assert_select "p", text: "The payment deadline may need clarification."
       assert_select "button[data-action='flag-drawer#open']", text: "See more"
       assert_select "dialog[data-flag-drawer-target='dialog']" do
         assert_select "h2", text: /Clarify payment deadline/
         assert_select "p", text: "sample.txt"
+        assert_select "h4", text: "Details"
+        assert_select "p", text: "The payment deadline may need clarification."
       end
     end
     assert_not_includes response.body, "high-risk"
     assert_select "dialog[id='#{dom_id(doc_file, :package_risks)}']", count: 0
+  end
+
+  test "need attention counts and shows only active flags" do
+    doc_file = @package.doc_files.create!(
+      ai_status: "complete",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    clause = doc_file.clauses.create!(
+      package: @package,
+      title: "Payment",
+      risk_level: "low"
+    )
+    active_flag = clause.flags.create!(name: "Clarify payment deadline", level: "high")
+    resolved_flag = clause.flags.create!(
+      name: "Confirmed payment method",
+      level: "low",
+      resolved: true,
+      resolution_note: "Confirmed."
+    )
+
+    get package_url(@package)
+
+    assert_response :success
+    assert_select "a[href='#{flags_doc_file_path(doc_file)}']" do
+      assert_select "span", text: "1"
+    end
+    assert_select "span", text: "(Resolved)", count: 0
+    assert_select "#package-active-flags" do
+      assert_select "h3", text: "1 Unresolved Flag"
+      assert_select "article", text: /Clarify payment deadline/
+      assert_select "article", text: /Confirmed payment method/, count: 0
+      assert_select "input[name='render_context'][value='package_group_item']"
+    end
+    assert_includes response.body, active_flag.name
+    assert_not_includes response.body, resolved_flag.name
+  end
+
+  test "file shows a neutral resolved flag indicator when no active flags remain" do
+    doc_file = @package.doc_files.create!(
+      ai_status: "complete",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    clause = doc_file.clauses.create!(package: @package, title: "Payment")
+    clause.flags.create!(
+      name: "Confirmed payment method",
+      level: "low",
+      resolved: true,
+      resolution_note: "Confirmed."
+    )
+
+    get package_url(@package)
+
+    assert_response :success
+    assert_select "span[title='1 resolved flag'].text-neutral-600" do
+      assert_select "svg"
+      assert_select "span", text: "1"
+      assert_select "span.italic", text: "(Resolved)"
+    end
+    assert_select "a[href='#{flags_doc_file_path(doc_file)}']", count: 0
   end
 
   test "should enqueue text extraction when opening package with unextracted files" do
@@ -333,7 +499,7 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Upload different file or call customer support"
     assert_select "form[action='#{doc_file_path(@package.doc_files.first)}'][method='post'] button", text: "Delete file"
     assert_select "h3", text: "Analysis required", count: 0
-    assert response.body.index("Failed to analyse - sample.txt") < response.body.index(">Flags<")
+    assert response.body.index("Failed to analyse - sample.txt") < response.body.index("id=\"package-active-flags\"")
     assert_select "button[data-action='flag-drawer#open']", text: "See more"
   end
 
@@ -384,12 +550,15 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to package_url(@package)
     assert_equal "processing", pending_doc_file.reload.ai_status
     assert_equal "complete", complete_doc_file.reload.ai_status
+    assert_equal "analyzing_clauses", pending_doc_file.analysis_stage
+    assert_equal 1, pending_doc_file.analysis_position
+    assert_equal 1, pending_doc_file.analysis_total
 
     get package_url(@package)
 
     assert_response :success
-    assert_includes response.body, "Analyzing file..."
-    assert_select "[data-package-status-poll-target='analysisAction']", text: "Analyzing file..."
+    assert_includes response.body, "Analyzing clauses"
+    assert_select "[data-package-status-poll-target='analysisAction']", text: "Analyzing file 1 of 1"
     assert_select "[data-package-status-poll-target='analysisAction'] form[action='#{analyze_package_path(@package)}']", count: 0
     assert_select "[data-controller~='package-status-poll'][data-package-status-poll-active-value='true']"
   end

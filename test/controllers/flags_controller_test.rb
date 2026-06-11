@@ -15,6 +15,7 @@ class FlagsControllerTest < ActionDispatch::IntegrationTest
     )
     @flag = clause.flags.create!(
       name: "Clarify payment deadline",
+      reason: "The payment deadline may need clarification.",
       level: "high",
       category: "deadline",
       suggested_action: "Ask whether the deadline can be extended."
@@ -50,7 +51,7 @@ class FlagsControllerTest < ActionDispatch::IntegrationTest
     assert_select "turbo-stream[action='replace'][target='flag_#{@flag.id}']"
     assert_includes response.body, "Reopen"
     assert_includes response.body, "Resolved"
-    assert_includes response.body, "Deadline"
+    assert_includes response.body, "The payment deadline may need clarification."
     assert_includes response.body, "Suggested action"
     assert_includes response.body, "Added to negotiation list."
   end
@@ -67,6 +68,76 @@ class FlagsControllerTest < ActionDispatch::IntegrationTest
     assert_select "turbo-stream[action='replace'][target='flag_#{@flag.id}']"
     assert_select "button[aria-label='View flag: Clarify payment deadline']"
     assert_includes response.body, "No notes added"
+  end
+
+  test "should preserve grouped drawer item when resolving" do
+    patch flag_url(@flag),
+          params: {
+            flag: { resolved: true, resolution_note: "Accepted for this agreement." },
+            render_context: "group_item"
+          },
+          as: :turbo_stream
+
+    assert_response :success
+    assert_select "turbo-stream[action='replace'][target='flag_#{@flag.id}']"
+    assert_select "article##{dom_id(@flag)}"
+    assert_includes response.body, "Reopen"
+    assert_includes response.body, "Accepted for this agreement."
+  end
+
+  test "should refresh package active flags when resolving from need attention" do
+    another_flag = @flag.clause.flags.create!(
+      name: "Confirm payment method",
+      reason: "The payment method requires confirmation.",
+      level: "medium"
+    )
+
+    patch flag_url(@flag),
+          params: {
+            flag: { resolved: true, resolution_note: "Confirmed." },
+            render_context: "package_group_item"
+          },
+          as: :turbo_stream
+
+    assert_response :success
+    assert @flag.reload.resolved?
+    assert_select "turbo-stream[action='replace'][target='package-active-flags']"
+    assert_select "template #package-active-flags" do
+      assert_select "h3", text: "1 Unresolved Flag"
+      assert_select "article", text: /Confirm payment method/
+      assert_select "article", text: /Clarify payment deadline/, count: 0
+    end
+    assert_not another_flag.reload.resolved?
+  end
+
+  test "should refresh file active flags when resolving from file page" do
+    doc_file = @flag.clause.package.doc_files.create!(
+      ai_status: "complete",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    @flag.clause.update!(doc_file: doc_file)
+    another_flag = @flag.clause.flags.create!(
+      name: "Confirm payment method",
+      reason: "The payment method requires confirmation.",
+      level: "medium"
+    )
+
+    patch flag_url(@flag),
+          params: {
+            flag: { resolved: true, resolution_note: "Confirmed." },
+            render_context: "file_group_item"
+          },
+          as: :turbo_stream
+
+    assert_response :success
+    assert @flag.reload.resolved?
+    assert_select "turbo-stream[action='replace'][target='file-active-flags']"
+    assert_select "template #file-active-flags" do
+      assert_select "h2", text: "1 Unresolved Flag"
+      assert_select "article", text: /Confirm payment method/
+      assert_select "article", text: /Clarify payment deadline/, count: 0
+    end
+    assert_not another_flag.reload.resolved?
   end
 
   test "should not update another user's flag" do

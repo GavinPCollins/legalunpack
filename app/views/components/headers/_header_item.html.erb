@@ -26,13 +26,14 @@
 <% search_drawer_body = local_assigns[:search_drawer_body] || "Search results will appear here." %>
 <% show_search = local_assigns.fetch(:show_search, true) %>
 <% show_search_drawer = local_assigns.fetch(:show_search_drawer, true) %>
+<% show_search_drawer_query = local_assigns.fetch(:show_search_drawer_query, true) %>
 
 <%# ---- AI chat ---- %>
 <% ai_chat_label = local_assigns[:ai_chat_label] || "Open AI chat" %>
 <% ai_chat_path = local_assigns[:ai_chat_path] %>
 <% ai_chat_url = local_assigns[:ai_chat_url] %>
 <% ai_chat_drawer_title = local_assigns[:ai_chat_drawer_title] || "AI chat" %>
-<% ai_chat_drawer_body = local_assigns[:ai_chat_drawer_body] || "Ask a question about this package. Chat responses will appear here once the chat action is connected." %>
+<% ai_chat_drawer_body = local_assigns[:ai_chat_drawer_body] || "Our assistant provides information only and does not constitute legal advice." %>
 <% show_ai_chat = local_assigns.fetch(:show_ai_chat, true) %>
 
 <%# ---- Overflow actions ---- %>
@@ -175,7 +176,9 @@
             title: search_drawer_title,
             title_id: "search-drawer-title"
           } do %>
-      <p class="search-drawer-query" data-search-drawer-target="queryText"></p>
+      <% if show_search_drawer_query %>
+        <p class="search-drawer-query" data-search-drawer-target="queryText"></p>
+      <% end %>
       <% if search_frame_id.present? %>
         <%= turbo_frame_tag search_frame_id do %>
           <% if search_frame_content.present? %>

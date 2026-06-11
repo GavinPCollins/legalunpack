@@ -1,0 +1,29 @@
+<%
+  active_flag_groups = package.clauses.filter_map do |clause|
+    next if clause.doc_file&.archived?
+
+    active_flags = clause.flags.reject(&:resolved?)
+    [ clause, active_flags ] if active_flags.any?
+  end
+  active_flag_count = active_flag_groups.sum { |_clause, flags| flags.size }
+%>
+
+<div id="package-active-flags">
+  <% if active_flag_groups.any? %>
+    <section>
+      <h3 class="text-base font-semibold text-neutral-950"><%= pluralize(active_flag_count, "Unresolved Flag") %></h3>
+
+      <ol class="mt-3 space-y-3">
+        <% active_flag_groups.each do |clause, active_flags| %>
+          <% flag_file = clause.doc_file %>
+          <% flag_file_name = flag_file&.file&.attached? ? flag_file.file.filename.to_s : "Untitled file" %>
+          <%= render "components/flag_group",
+                clause: clause,
+                flags: active_flags,
+                file_name: flag_file_name,
+                render_context: "package_group_item" %>
+        <% end %>
+      </ol>
+    </section>
+  <% end %>
+</div>

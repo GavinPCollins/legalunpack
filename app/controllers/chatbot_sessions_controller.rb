@@ -104,7 +104,7 @@ class ChatbotSessionsController < ApplicationController
 
     case target.to_s
     when "doc_file"
-      doc = package.doc_files.find_by(id: target_id)
+      doc = package.doc_files.active.find_by(id: target_id)
       context_parts << doc.extracted_text.to_s.truncate(2_000, separator: "\n\n") if doc&.extraction_status == "complete"
     when "clause"
       clause = package.clauses.find_by(id: target_id)

@@ -24,6 +24,82 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "sample.txt", @package.doc_files.last.file.filename.to_s
   end
 
+  test "should replace a file and resolve its active flags" do
+    doc_file = @package.doc_files.create!(
+      extraction_status: "complete",
+      ai_status: "complete",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    clause = doc_file.clauses.create!(package: @package, title: "Payment")
+    active_flag = clause.flags.create!(name: "Review payment term", level: "high")
+    resolved_flag = clause.flags.create!(
+      name: "Confirmed payment method",
+      level: "low",
+      resolved: true,
+      resolution_note: "Previously confirmed."
+    )
+    replacement_upload = fixture_file_upload("sample.pdf", "application/pdf")
+
+    assert_enqueued_with(job: ExtractPackageTextJob, args: [ @package ]) do
+      assert_difference("DocFile.count", 1) do
+        post replace_doc_file_url(doc_file), params: { replacement_file: replacement_upload }
+      end
+    end
+
+    replacement = @package.doc_files.order(:id).last
+    assert_redirected_to package_url(@package)
+    assert doc_file.reload.archived?
+    assert_equal replacement, doc_file.replaced_by_doc_file
+    assert replacement.active?
+    assert_equal "sample.pdf", replacement.file.filename.to_s
+    assert active_flag.reload.resolved?
+    assert_equal "file being replaced with sample.pdf", active_flag.resolution_note
+    assert_not_nil active_flag.resolved_at
+    assert_equal "Previously confirmed.", resolved_flag.reload.resolution_note
+  end
+
+  test "should require a replacement file" do
+    doc_file = @package.doc_files.create!(file: fixture_file_upload("sample.txt", "text/plain"))
+
+    assert_no_difference("DocFile.count") do
+      post replace_doc_file_url(doc_file)
+    end
+
+    assert_redirected_to package_url(@package)
+    assert_not doc_file.reload.archived?
+    assert_nil doc_file.replaced_by_doc_file
+  end
+
+  test "invalid replacement leaves original file and flags unchanged" do
+    doc_file = @package.doc_files.create!(file: fixture_file_upload("sample.txt", "text/plain"))
+    clause = doc_file.clauses.create!(package: @package, title: "Payment")
+    flag = clause.flags.create!(name: "Review payment term", level: "high")
+    invalid_upload = fixture_file_upload("sample.txt", "text/html")
+
+    assert_no_difference("DocFile.count") do
+      post replace_doc_file_url(doc_file), params: { replacement_file: invalid_upload }
+    end
+
+    assert_redirected_to package_url(@package)
+    assert_not doc_file.reload.archived?
+    assert_nil doc_file.replaced_by_doc_file
+    assert_not flag.reload.resolved?
+  end
+
+  test "should not replace another user's file" do
+    other_user = User.create!(email: "replace-other@example.com", password: "password", username: "replaceother")
+    other_package = other_user.packages.create!(name: "Private package")
+    other_file = other_package.doc_files.create!(file: fixture_file_upload("sample.txt", "text/plain"))
+
+    assert_no_difference("DocFile.count") do
+      post replace_doc_file_url(other_file),
+           params: { replacement_file: fixture_file_upload("sample.pdf", "application/pdf") }
+    end
+
+    assert_response :not_found
+    assert_not other_file.reload.archived?
+  end
+
   test "should show rendered document row for polling" do
     doc_file = @package.doc_files.create!(
       extraction_status: "complete",
@@ -75,6 +151,31 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
+  test "document row shows resolved flag count when no active flags remain" do
+    doc_file = @package.doc_files.create!(
+      ai_status: "complete",
+      ai_micro_summary: "Payment obligations.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    clause = doc_file.clauses.create!(package: @package, title: "Payment")
+    clause.flags.create!(
+      name: "Confirmed payment method",
+      level: "low",
+      resolved: true,
+      resolution_note: "Confirmed."
+    )
+
+    get doc_file_url(doc_file)
+
+    assert_response :success
+    assert_select "li#doc_file_#{doc_file.id} span.text-neutral-600" do
+      assert_select "svg"
+      assert_select "span", text: "1"
+      assert_select "span.italic", text: "(Resolved)"
+    end
+    assert_select "a[href='#{flags_doc_file_path(doc_file)}']", count: 0
+  end
+
   test "should reject add document without a file" do
     assert_no_difference("DocFile.count") do
       post doc_files_url, params: { package_id: @package.id }
@@ -117,6 +218,8 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     end
     assert_select ".item-header-title .subheader", count: 0
     assert_select "form.item-search input[type='hidden'][name='package_id'][value='#{@package.id}']"
+    assert_select "[data-search-drawer-target='queryText']", count: 0
+    assert_select "footer p.italic", text: /not a substitute for professional legal advice/
     assert_includes response.body, "This file sets payment obligations."
   end
 
@@ -172,6 +275,30 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
         assert_select "p", text: "sample.txt"
       end
     end
+  end
+
+  test "summary should not show flag triggers for resolved flags" do
+    doc_file = @package.doc_files.create!(
+      ai_summary: "This file sets payment obligations.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    clause = doc_file.clauses.create!(
+      package: @package,
+      title: "Payment",
+      content: "Payment is due within 14 days.",
+      position: 1
+    )
+    clause.flags.create!(
+      name: "Resolved payment deadline",
+      level: "high",
+      resolved: true,
+      resolution_note: "Confirmed."
+    )
+
+    get summary_doc_file_url(doc_file)
+
+    assert_response :success
+    assert_select "li##{dom_id(clause)} button[aria-label='View flag: Resolved payment deadline']", count: 0
   end
 
   test "should highlight requested clause text in summary" do
@@ -271,12 +398,14 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
       level: "high",
       category: "deadline",
       reason: "The deadline may be too short.",
+      details: "The clause requires payment sooner than expected and may be difficult to meet.",
       suggested_action: "Ask whether the deadline can be extended."
     )
     high_risk_clause = doc_file.clauses.create!(
       package: @package,
       title: "Indemnity",
       risk_level: "high",
+      summary: "Creates a broad indemnity requiring review.",
       position: 2
     )
     high_risk_clause.flags.create!(name: "Review indemnity", level: "medium")
@@ -295,29 +424,59 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
       assert_select "a[href='#{summary_doc_file_path(doc_file)}']", text: "sample.txt"
       assert_select "[aria-current='page']", count: 0
     end
-    assert_select "h2", text: "2 Flags"
+    assert_select "h2", text: "2 Unresolved Flags"
     assert_includes response.body, "Clarify payment deadline"
     assert_includes response.body, "Review indemnity"
     assert_select "button.btn", text: "See more", count: 2
     assert_select "dialog[data-flag-drawer-target='dialog']", count: 2
-    assert_select "article" do
+    assert_select "li##{dom_id(low_risk_clause, :flag_group)}" do
       assert_select "h3", text: "Clarify payment deadline"
-      assert_select "h3 + span.pill.badge-danger", text: "High priority"
-      assert_select "p", text: /Deadline/
-      assert_select "p", text: /Open/
-      assert_select "p", text: /deadline may be too short/i, count: 0
-    end
-    assert_select "article", text: /Review indemnity/ do
-      assert_select "span.pill.badge-warning", text: "Medium priority"
-    end
-    assert_select "dialog", text: /Clarify payment deadline/ do
-      assert_select "h2", text: /Clarify payment deadline/
-      assert_select "h2 span.pill.badge-danger", text: "High priority"
-      assert_select "p", text: "sample.txt"
-      assert_select "h3", text: "Reason"
+      assert_select "span.pill.badge-neutral", text: "1 flag"
+      assert_select "span.pill.badge-danger", text: "High priority"
       assert_select "p", text: "The deadline may be too short."
-      assert_select "h3", text: "Suggested action"
-      assert_select "p", text: "Ask whether the deadline can be extended."
+      assert_select "dialog" do
+        assert_select "h2", text: "Clarify payment deadline"
+        assert_select "article##{dom_id(low_risk_clause.flags.first)}" do
+          assert_select "h3", text: "Clarify payment deadline"
+          assert_select "h4", text: "Details"
+          assert_select "p", text: "The clause requires payment sooner than expected and may be difficult to meet."
+          assert_select "h4", text: "Suggested action"
+        end
+      end
+    end
+    assert_select "li##{dom_id(high_risk_clause, :flag_group)}" do
+      assert_select "h3", text: "Review indemnity"
+      assert_select "span.pill.badge-warning", text: "Medium priority"
+      assert_select "p", text: "Creates a broad indemnity requiring review."
+    end
+  end
+
+  test "flags page counts and shows only active flags" do
+    doc_file = @package.doc_files.create!(
+      ai_status: "complete",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    clause = doc_file.clauses.create!(
+      package: @package,
+      title: "Payment",
+      risk_level: "low"
+    )
+    clause.flags.create!(name: "Active payment concern", level: "high")
+    clause.flags.create!(
+      name: "Resolved payment concern",
+      level: "low",
+      resolved: true,
+      resolution_note: "Confirmed."
+    )
+
+    get flags_doc_file_url(doc_file)
+
+    assert_response :success
+    assert_select "#file-active-flags" do
+      assert_select "h2", text: "1 Unresolved Flag"
+      assert_select "article", text: /Active payment concern/
+      assert_select "article", text: /Resolved payment concern/, count: 0
+      assert_select "input[name='render_context'][value='file_group_item']"
     end
   end
 
@@ -383,6 +542,7 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "turbo-frame#summary_search_results" do
+      assert_select ".search-drawer-query", text: 'Results for "repair"'
       assert_select "p", text: /matches in this package/
       assert_select "p", text: "Clause 2 match"
       assert_select "p", text: "Creates an air conditioner repair obligation."
@@ -433,7 +593,10 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "turbo-frame#summary_search_results" do
       assert_select "p", text: "No matching package results"
-      assert_select "button[data-action='search-drawer#close ai-chat-drawer#ask']", text: "Ask AI for help"
+      assert_select "p", text: "Check your spelling, or try another word or phrase."
+      assert_select "p", text: /Alternatively,.*ask our AI assistant for help/m do
+        assert_select "button[data-action='search-drawer#close ai-chat-drawer#ask']", text: "ask our AI assistant for help"
+      end
       assert_select "button[data-ai-chat-drawer-question-param='Can you help me find anything related to \"payment\" in this package?']"
       assert_select "p", text: /Package name match/, count: 0
       assert_select "p", text: /File name match/, count: 0

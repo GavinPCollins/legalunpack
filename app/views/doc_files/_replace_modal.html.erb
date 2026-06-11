@@ -1,0 +1,66 @@
+<% file_name = doc_file.file.attached? ? doc_file.file.filename.to_s : "Untitled file" %>
+<% modal_name = "replace-file-#{doc_file.id}" %>
+
+<div class="fixed inset-0 z-50 hidden"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="replace-file-title-<%= doc_file.id %>"
+     data-modal-target="dialog"
+     data-modal-name="<%= modal_name %>">
+  <button type="button"
+          class="fixed inset-0 bg-neutral-950/40"
+          aria-label="Close replacement dialog"
+          data-action="modal#close"
+          data-modal-dialog-param="<%= modal_name %>"></button>
+
+  <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+    <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+      <div class="relative w-full max-w-lg rounded-lg bg-white p-6 text-left shadow-xl">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h2 id="replace-file-title-<%= doc_file.id %>" class="text-lg font-semibold text-neutral-950">
+              Replace <%= file_name %>
+            </h2>
+            <p class="mt-1 text-sm text-neutral-500">
+              The current file will be archived after the replacement is confirmed.
+            </p>
+          </div>
+
+          <button type="button"
+                  class="btn"
+                  data-action="modal#close"
+                  data-modal-dialog-param="<%= modal_name %>">
+            Close
+          </button>
+        </div>
+
+        <%= form_with url: replace_doc_file_path(doc_file),
+              multipart: true,
+              data: { controller: "file-upload", file_upload_multiple_value: false },
+              class: "mt-6 space-y-4" do %>
+          <div class="rounded-md border-2 border-dashed border-neutral-300 bg-neutral-50 p-6 text-center"
+               data-file-upload-target="dropzone"
+               data-action="dragover->file-upload#dragover drop->file-upload#drop">
+            <p class="text-sm font-medium text-neutral-950">Drop one replacement file here</p>
+            <p class="mt-1 text-xs text-neutral-500">PDF, DOCX, TXT, RTF</p>
+            <%= label_tag "replacement_file_#{doc_file.id}", "Select file", class: "btn btn-secondary mt-4" %>
+            <%= file_field_tag :replacement_file,
+                  id: "replacement_file_#{doc_file.id}",
+                  required: true,
+                  accept: ".pdf,.docx,.txt,.rtf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/rtf,application/x-rtf,text/rtf,text/plain",
+                  class: "sr-only",
+                  data: { file_upload_target: "input", action: "change->file-upload#select" } %>
+          </div>
+
+          <ul class="space-y-2 text-left text-sm text-neutral-700"
+              data-file-upload-target="list"
+              aria-live="polite"></ul>
+
+          <div class="flex justify-end">
+            <%= submit_tag "Confirm replacement", class: "btn btn-primary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

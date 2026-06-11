@@ -1,0 +1,23 @@
+<% highest_priority = highest_priority_flag(flags) %>
+<% group_summary = flag_group_summary(clause, flags) %>
+
+<article class="flex items-end justify-between gap-4 rounded-md border border-neutral-200 bg-white px-4 py-3">
+  <div class="min-w-0">
+    <h3 class="break-words text-sm font-semibold text-neutral-950"><%= flag_group_title(clause, flags) %></h3>
+    <div class="mt-2 flex flex-wrap items-center gap-2">
+      <span class="pill badge-neutral"><%= pluralize(flags.size, "flag") %></span>
+      <% if highest_priority.present? %>
+        <span class="pill <%= flag_priority_class(highest_priority) %>"><%= flag_priority_label(highest_priority) %></span>
+      <% end %>
+    </div>
+    <% if group_summary.present? %>
+      <p class="mt-1 text-sm leading-5 text-neutral-600"><%= group_summary %></p>
+    <% end %>
+  </div>
+
+  <button type="button"
+          class="btn shrink-0"
+          data-action="flag-drawer#open">
+    See more
+  </button>
+</article>

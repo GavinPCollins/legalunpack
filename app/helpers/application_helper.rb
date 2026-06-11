@@ -48,13 +48,15 @@ module ApplicationHelper
   end
 
   def package_ai_summary_search_match_count(package, query)
-    summary_matches = package.doc_files.sum { |doc_file| ai_summary_match_count(doc_file, query) }
+    summary_matches = package.doc_files.reject(&:archived?).sum { |doc_file| ai_summary_match_count(doc_file, query) }
 
     summary_matches + matching_clause_results(package, query).count
   end
 
   def matching_clause_results(package, query)
     package.clauses.sort_by { |clause| [clause.position || Float::INFINITY, clause.id || 0] }.select do |clause|
+      next false if clause.doc_file&.archived?
+
       [
         clause.title,
         clause.risk_level,
@@ -62,6 +64,45 @@ module ApplicationHelper
         clause.content
       ].any? { |value| search_text_match?(value, query) }
     end
+  end
+
+  def flag_priority_class(flag)
+    case flag.level
+    when "high" then "badge-danger"
+    when "medium" then "badge-warning"
+    when "low" then "badge-info"
+    else "badge-neutral"
+    end
+  end
+
+  def flag_priority_label(flag)
+    flag.level.present? ? "#{flag.level.humanize} priority" : "Review"
+  end
+
+  def highest_priority_flag(flags)
+    all_flags = Array(flags)
+    active_flags = all_flags.reject(&:resolved?)
+    considered_flags = active_flags.presence || all_flags
+
+    considered_flags.max_by { |flag| { "high" => 3, "medium" => 2, "low" => 1 }.fetch(flag.level, 0) }
+  end
+
+  def flag_group_title(clause, flags)
+    ordered_flags = Array(flags)
+    return ordered_flags.first.name if ordered_flags.one?
+
+    clause_name = clause.title.presence || "clause"
+    return "#{ordered_flags.first.name} and #{ordered_flags.second.name}".truncate(100) if ordered_flags.size == 2
+
+    "Multiple concerns in #{clause_name}"
+  end
+
+  def flag_group_summary(clause, flags)
+    summaries = Array(flags).filter_map { |flag| flag.reason.presence }.uniq
+    return summaries.first if summaries.one?
+    return summaries.to_sentence if summaries.any?
+
+    clause.summary.presence
   end
 
   def failed_package_search_ai_question(query)
