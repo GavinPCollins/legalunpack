@@ -25,41 +25,129 @@ class FlagsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should resolve current user's flag" do
-    patch flag_url(@flag), params: { flag: { resolved: true, resolution_note: "Confirmed with the agent." } }
+    patch flag_url(@flag), params: { flag: { resolved: true, note: "Confirmed with the agent." } }
 
     assert_redirected_to package_path(@flag.clause.package)
     assert @flag.reload.resolved?
-    assert_equal "Confirmed with the agent.", @flag.resolution_note
+    assert_equal "Confirmed with the agent.", @flag.note
     assert_not_nil @flag.resolved_at
   end
 
-  test "should add a default resolution note when resolving without one" do
-    patch flag_url(@flag), params: { flag: { resolved: true, resolution_note: "" } }
+  test "should allow resolving without a note" do
+    patch flag_url(@flag), params: { flag: { resolved: true, note: "" } }
 
     assert_redirected_to package_path(@flag.clause.package)
     assert @flag.reload.resolved?
-    assert_equal "No notes added", @flag.resolution_note
+    assert_equal "", @flag.note
+  end
+
+  test "should dismiss a flag with an optional reason using resolution fields" do
+    patch flag_url(@flag),
+          params: {
+            flag: {
+              resolved: true,
+              resolution_note: "This issue is acceptable for this agreement."
+            }
+          }
+
+    assert_redirected_to package_path(@flag.clause.package)
+    assert @flag.reload.resolved?
+    assert_equal "This issue is acceptable for this agreement.", @flag.resolution_note
+    assert_not_nil @flag.resolved_at
+  end
+
+  test "should dismiss a flag without a reason" do
+    patch flag_url(@flag),
+          params: {
+            flag: {
+              resolved: true,
+              resolution_note: ""
+            }
+          }
+
+    assert_redirected_to package_path(@flag.clause.package)
+    assert @flag.reload.resolved?
+    assert_equal "", @flag.resolution_note
+  end
+
+  test "should update a flag note without resolving" do
+    patch flag_url(@flag), params: { flag: { note: "Ask the agent about timing." } }
+
+    assert_redirected_to package_path(@flag.clause.package)
+    assert_not @flag.reload.resolved?
+    assert_equal "Ask the agent about timing.", @flag.note
+  end
+
+  test "should clear a flag note" do
+    @flag.update!(note: "Ask the agent about timing.")
+
+    patch flag_url(@flag), params: { flag: { note: "" } }
+
+    assert_redirected_to package_path(@flag.clause.package)
+    assert_equal "", @flag.reload.note
+  end
+
+  test "should update only the flag footer when saving a note with turbo stream" do
+    patch flag_url(@flag),
+          params: { flag: { note: "Ask the agent about timing." } },
+          as: :turbo_stream
+
+    assert_response :success
+    assert_equal "Ask the agent about timing.", @flag.reload.note
+    assert_select "turbo-stream[action='replace'][target='#{dom_id(@flag, :footer)}']"
+    assert_select "turbo-stream[action='replace'][target='#{dom_id(@flag)}']", count: 0
+    assert_select "template details[open]" do
+      assert_select "textarea[name='flag[note]']", text: "Ask the agent about timing."
+      assert_select "button[data-action='flag-note#clear']", text: "Clear"
+      assert_select "input[type='submit'][value='Save']"
+    end
+  end
+
+  test "should keep the note panel open when clearing a note with turbo stream" do
+    @flag.update!(note: "Ask the agent about timing.")
+
+    patch flag_url(@flag),
+          params: { flag: { note: "" } },
+          as: :turbo_stream
+
+    assert_response :success
+    assert_equal "", @flag.reload.note
+    assert_select "turbo-stream[action='replace'][target='#{dom_id(@flag, :footer)}']"
+    assert_select "template details[open]" do
+      assert_select "textarea[name='flag[note]']", text: ""
+      assert_select "button[data-action='flag-note#clear']", text: "Clear"
+      assert_select "input[type='submit'][value='Save']"
+    end
   end
 
   test "should resolve current user's flag with turbo stream replacement" do
     patch flag_url(@flag),
-          params: { flag: { resolved: true, resolution_note: "Added to negotiation list." } },
+          params: { flag: { resolved: true, note: "Added to negotiation list." } },
           as: :turbo_stream
 
     assert_response :success
     assert @flag.reload.resolved?
     assert_select "turbo-stream[action='replace'][target='flag_#{@flag.id}']"
-    assert_includes response.body, "Reopen"
+    assert_includes response.body, "Re-activate flag"
     assert_includes response.body, "Resolved"
     assert_includes response.body, "The payment deadline may need clarification."
     assert_includes response.body, "Suggested action"
     assert_includes response.body, "Added to negotiation list."
+    assert_includes response.body, "Notes"
+    assert_select "template details[open]" do
+      assert_select "textarea[name='flag[note]']", text: "Added to negotiation list."
+      assert_select "input[type='submit'][value='Save']"
+      assert_select "button[data-action='flag-note#clear']", text: "Clear"
+    end
+    assert_includes response.body, "Ask AI assistant"
+    assert_includes response.body, "Move to chat"
+    assert_not_includes response.body, "Resolution note"
   end
 
   test "should preserve icon trigger when resolving from a search result" do
     patch flag_url(@flag),
           params: {
-            flag: { resolved: true, resolution_note: "" },
+            flag: { resolved: true, note: "" },
             render_context: "icon_trigger"
           },
           as: :turbo_stream
@@ -67,13 +155,13 @@ class FlagsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "turbo-stream[action='replace'][target='flag_#{@flag.id}']"
     assert_select "button[aria-label='View flag: Clarify payment deadline']"
-    assert_includes response.body, "No notes added"
+    assert_not_includes response.body, "No notes added"
   end
 
   test "should preserve grouped drawer item when resolving" do
     patch flag_url(@flag),
           params: {
-            flag: { resolved: true, resolution_note: "Accepted for this agreement." },
+            flag: { resolved: true, note: "Accepted for this agreement." },
             render_context: "group_item"
           },
           as: :turbo_stream
@@ -81,8 +169,9 @@ class FlagsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "turbo-stream[action='replace'][target='flag_#{@flag.id}']"
     assert_select "article##{dom_id(@flag)}"
-    assert_includes response.body, "Reopen"
+    assert_includes response.body, "Re-activate flag"
     assert_includes response.body, "Accepted for this agreement."
+    assert_not_includes response.body, "Resolution note"
   end
 
   test "should refresh package active flags when resolving from need attention" do
@@ -94,7 +183,7 @@ class FlagsControllerTest < ActionDispatch::IntegrationTest
 
     patch flag_url(@flag),
           params: {
-            flag: { resolved: true, resolution_note: "Confirmed." },
+            flag: { resolved: true, note: "Confirmed." },
             render_context: "package_group_item"
           },
           as: :turbo_stream
@@ -124,7 +213,7 @@ class FlagsControllerTest < ActionDispatch::IntegrationTest
 
     patch flag_url(@flag),
           params: {
-            flag: { resolved: true, resolution_note: "Confirmed." },
+            flag: { resolved: true, note: "Confirmed." },
             render_context: "file_group_item"
           },
           as: :turbo_stream

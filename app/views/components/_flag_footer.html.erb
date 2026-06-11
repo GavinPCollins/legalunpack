@@ -1,0 +1,68 @@
+<% render_context = local_assigns[:render_context] || "action_item" %>
+<% note_open = flag.note.present? || local_assigns[:note_open] %>
+
+<div id="<%= dom_id(flag, :footer) %>" class="space-y-4">
+  <details class="group"<%= " open" if note_open %>>
+    <summary class="inline-flex cursor-pointer list-none items-center rounded-md px-0 py-1 text-sm font-semibold text-cyan-800 hover:text-cyan-950 group-open:hidden [&::-webkit-details-marker]:hidden">
+      + Add Note
+    </summary>
+
+    <%= form_with model: flag,
+          url: flag_path(flag),
+          method: :patch,
+          class: "mt-3 rounded-md border border-neutral-200 p-4",
+          data: { controller: "flag-note" } do |form| %>
+      <%= hidden_field_tag :render_context, render_context %>
+      <div class="flex items-center justify-between gap-4">
+        <%= form.label :note, "Notes", class: "block text-sm font-semibold text-neutral-950" %>
+        <div class="flex shrink-0 items-center gap-3">
+          <button type="button"
+                  class="rounded-md px-2 py-1 text-sm font-semibold text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                  data-action="flag-note#clear">
+            Clear
+          </button>
+          <%= form.submit "Save",
+                class: "rounded-md px-2 py-1 text-sm font-semibold text-cyan-800 hover:bg-cyan-50 hover:text-cyan-950" %>
+        </div>
+      </div>
+      <%= form.text_area :note,
+            rows: 3,
+            placeholder: "Add your note about this flag...",
+            class: "mt-3 block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm placeholder:text-neutral-400 focus:border-cyan-700 focus:outline-none focus:ring-1 focus:ring-cyan-700",
+            data: { flag_note_target: "input" } %>
+    <% end %>
+  </details>
+
+  <form class="rounded-md border border-neutral-200 p-4"
+        data-controller="flag-chat-prompt"
+        data-flag-chat-prompt-flag-name-value="<%= flag.name %>"
+        data-flag-chat-prompt-flag-id-value="<%= flag.id %>"
+        data-action="submit->flag-chat-prompt#submit">
+    <label for="<%= dom_id(flag, :ai_question) %>" class="block text-sm font-semibold text-neutral-950">
+      Ask AI assistant
+    </label>
+    <textarea id="<%= dom_id(flag, :ai_question) %>"
+              rows="3"
+              placeholder="Ask about this flag..."
+              class="mt-2 block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm placeholder:text-neutral-400 focus:border-cyan-700 focus:outline-none focus:ring-1 focus:ring-cyan-700"
+              data-flag-chat-prompt-target="input"></textarea>
+    <div class="mt-3 flex justify-end">
+      <button type="submit" class="btn btn-primary">Move to chat</button>
+    </div>
+  </form>
+
+  <% if flag.resolved? %>
+    <div class="flex justify-center">
+      <%= button_to "Re-activate flag",
+            flag_path(flag),
+            method: :patch,
+            params: { flag: { resolved: false }, render_context: render_context },
+            class: "rounded-md px-3 py-2 text-sm font-semibold text-cyan-800 hover:bg-cyan-50 hover:text-cyan-950",
+            form: { data: { turbo: false } } %>
+    </div>
+  <% else %>
+    <%= render "components/flag_dismiss_dialog",
+          flag: flag,
+          render_context: render_context %>
+  <% end %>
+</div>

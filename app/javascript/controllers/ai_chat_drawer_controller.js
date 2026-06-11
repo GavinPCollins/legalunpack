@@ -4,6 +4,18 @@ export default class extends Controller {
   static targets = ["dialog", "thread", "input", "submitButton"]
   static values = { url: String }
 
+  connect() {
+    this.prefillFromEvent = this.prefillFromEvent.bind(this)
+    this.askFromEvent = this.askFromEvent.bind(this)
+    window.addEventListener("ai-chat:prefill", this.prefillFromEvent)
+    window.addEventListener("ai-chat:ask", this.askFromEvent)
+  }
+
+  disconnect() {
+    window.removeEventListener("ai-chat:prefill", this.prefillFromEvent)
+    window.removeEventListener("ai-chat:ask", this.askFromEvent)
+  }
+
   open() {
     this.show()
     this.loadHistory()
@@ -24,13 +36,37 @@ export default class extends Controller {
     }
   }
 
+  prefillFromEvent(event) {
+    this.open()
+
+    if (this.hasInputTarget) {
+      this.inputTarget.value = event.detail?.question || ""
+      this.inputTarget.focus()
+    }
+  }
+
+  async askFromEvent(event) {
+    const question = event.detail?.question?.trim()
+    if (!question) return
+
+    this.show()
+    await this.loadHistory()
+    await this.submitQuestion(question, {
+      target: event.detail?.target,
+      targetId: event.detail?.targetId
+    })
+  }
+
   async ask(event) {
     const question = event.params.question?.trim()
     if (!question) return
 
     this.show()
     await this.loadHistory()
-    await this.submitQuestion(question)
+    await this.submitQuestion(question, {
+      target: event.params.target,
+      targetId: event.params.targetId
+    })
   }
 
   close() {
@@ -54,7 +90,7 @@ export default class extends Controller {
     await this.submitQuestion(question)
   }
 
-  async submitQuestion(question) {
+  async submitQuestion(question, options = {}) {
     if (!this.hasInputTarget || !this.hasThreadTarget || !this.hasUrlValue) return
 
     this.setFormDisabled(true)
@@ -79,7 +115,11 @@ export default class extends Controller {
           "Content-Type": "application/json",
           "X-CSRF-Token": this.csrfToken()
         },
-        body: JSON.stringify({ question })
+        body: JSON.stringify({
+          question,
+          target: options.target,
+          target_id: options.targetId
+        })
       })
 
       const data = await response.json()

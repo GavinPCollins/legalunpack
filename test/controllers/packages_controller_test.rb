@@ -235,6 +235,8 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
       assert buttons.size >= 2, "expected at least 2 Delete package buttons, found #{buttons.size}"
     end
     assert_select "button[data-modal-dialog-param^='replace-file-']", text: "Replace file"
+    assert_select "form[action='#{archive_doc_file_path(@package.doc_files.first)}'][method='post'] button",
+                  text: "Archive file"
     assert_select "form[action^='/doc_files/'][action$='/replace']" do
       assert_select "input[type='file'][name='replacement_file'][required]", count: 1
       assert_select "input[type='submit'][value='Confirm replacement']", count: 1
@@ -360,6 +362,27 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
         assert_select "p", text: "sample.txt"
         assert_select "h4", text: "Details"
         assert_select "p", text: "The payment deadline may need clarification."
+        assert_select "details:not([open])" do
+          assert_select "summary.group-open\\:hidden", text: "+ Add Note"
+          assert_select "form[data-controller='flag-note']" do
+            assert_select "input[type='submit'][value='Save']"
+            assert_select "button[data-action='flag-note#clear']", text: "Clear"
+          end
+        end
+        assert_select "form[data-controller='flag-chat-prompt']" do
+          assert_select "[data-flag-chat-prompt-flag-name-value='Clarify payment deadline']"
+          assert_select "[data-flag-chat-prompt-flag-id-value='#{clause.flags.first.id}']"
+          assert_select "label", text: "Ask AI assistant"
+          assert_select "button", text: "Move to chat"
+        end
+        assert_select "button", text: "Dismiss flag", count: 1
+        assert_select "[role='dialog'][aria-labelledby='dismiss_dialog_flag_#{clause.flags.first.id}-title']" do
+          assert_select "label", text: "Reason (optional)"
+          assert_select "textarea[name='flag[resolution_note]']"
+          assert_select "button", text: "Cancel"
+          assert_select "input[type='submit'][value='Dismiss flag']"
+        end
+        assert_select "button", text: "Resolve", count: 0
       end
     end
     assert_not_includes response.body, "high-risk"
@@ -390,7 +413,9 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href='#{flags_doc_file_path(doc_file)}']" do
       assert_select "span", text: "1"
     end
-    assert_select "span", text: "(Resolved)", count: 0
+    assert_select "button", text: /\(Dismissed\)/ do
+      assert_select "span", text: "1"
+    end
     assert_select "#package-active-flags" do
       assert_select "h3", text: "1 Unresolved Flag"
       assert_select "article", text: /Clarify payment deadline/
@@ -398,7 +423,7 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
       assert_select "input[name='render_context'][value='package_group_item']"
     end
     assert_includes response.body, active_flag.name
-    assert_not_includes response.body, resolved_flag.name
+    assert_includes response.body, resolved_flag.name
   end
 
   test "file shows a neutral resolved flag indicator when no active flags remain" do
@@ -417,12 +442,36 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
     get package_url(@package)
 
     assert_response :success
-    assert_select "span[title='1 resolved flag'].text-neutral-600" do
+    assert_select "button[title='1 dismissed flag'].text-neutral-600" do
       assert_select "svg"
       assert_select "span", text: "1"
-      assert_select "span.italic", text: "(Resolved)"
+      assert_select "span.italic", text: "(Dismissed)"
+    end
+    assert_select "dialog[data-flag-drawer-target='dialog']" do
+      assert_select "h2", text: "Dismissed flag"
+      assert_select "h3", text: "Confirmed payment method"
+      assert_select "button", text: "Re-activate flag"
+      assert_select "button", text: "Dismiss flag", count: 0
     end
     assert_select "a[href='#{flags_doc_file_path(doc_file)}']", count: 0
+  end
+
+  test "file links to dismissed flags page when multiple dismissed flags exist" do
+    doc_file = @package.doc_files.create!(
+      ai_status: "complete",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    clause = doc_file.clauses.create!(package: @package, title: "Payment")
+    clause.flags.create!(name: "Confirmed payment method", resolved: true)
+    clause.flags.create!(name: "Accepted payment timing", resolved: true)
+
+    get package_url(@package)
+
+    assert_response :success
+    assert_select "a[href='#{dismissed_flags_doc_file_path(doc_file)}'][title='2 dismissed flags']" do
+      assert_select "span", text: "2"
+      assert_select "span.italic", text: "(Dismissed)"
+    end
   end
 
   test "should enqueue text extraction when opening package with unextracted files" do

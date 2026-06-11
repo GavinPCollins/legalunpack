@@ -3,8 +3,8 @@ class ChatbotPromptBuilder
   # Params:
   # - package: Package
   # - question: String
-  # - target: "package" | "doc_file" | "clause"
-  # - target_id: id for doc_file or clause when applicable
+  # - target: "package" | "doc_file" | "clause" | "flag"
+  # - target_id: id for doc_file, clause, or flag when applicable
   # - history: previous ChatMessage records for follow-up context
   def self.build(package, question:, target: "package", target_id: nil, history: [], legal_references: nil) # rubocop:disable Metrics/MethodLength,Metrics/PerceivedComplexity
     context_parts = []
@@ -17,6 +17,22 @@ class ChatbotPromptBuilder
       clause = package.clauses.find_by(id: target_id)
       context_parts << clause.content.to_s if clause
       context_parts << clause.summary.to_s if clause&.summary.present?
+    when "flag"
+      flag = Flag.joins(clause: :package).find_by(id: target_id, clauses: { package_id: package.id })
+      if flag
+        clause = flag.clause
+        doc = clause.doc_file
+
+        context_parts << "Flag: #{flag.name}"
+        context_parts << "Flag priority: #{flag.level}" if flag.level.present?
+        context_parts << "Flag category: #{flag.category}" if flag.category.present?
+        context_parts << "Flag summary: #{flag.reason}" if flag.reason.present?
+        context_parts << "Flag details: #{flag.details}" if flag.details.present?
+        context_parts << "Suggested action: #{flag.suggested_action}" if flag.suggested_action.present?
+        context_parts << "Related file: #{doc.file.filename}" if doc&.file&.attached?
+        context_parts << "Related clause text: #{clause.content}" if clause.content.present?
+        context_parts << "Related clause summary: #{clause.summary}" if clause.summary.present?
+      end
     else
       # package-wide: include all completed extracted_text
       texts = package.doc_files.active.where(extraction_status: "complete").pluck(:extracted_text)

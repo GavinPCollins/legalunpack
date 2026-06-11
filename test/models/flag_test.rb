@@ -43,7 +43,8 @@ class FlagTest < ActiveSupport::TestCase
       name: "Review clause",
       level: "medium",
       resolved: true,
-      resolution_note: "Accepted after review."
+      resolution_note: "Accepted after review.",
+      note: "Keep this note."
     )
 
     flag.update!(resolved: false)
@@ -51,6 +52,13 @@ class FlagTest < ActiveSupport::TestCase
     assert_not flag.resolved?
     assert_nil flag.resolved_at
     assert_nil flag.resolution_note
+    assert_equal "Keep this note.", flag.note
+  end
+
+  test "can store one user note" do
+    flag = @clause.flags.create!(name: "Review clause", note: "Discuss this with the agent.")
+
+    assert_equal "Discuss this with the agent.", flag.note
   end
 
   test "level must be low medium or high when present" do

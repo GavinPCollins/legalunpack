@@ -7,4 +7,10 @@
   <%= render "components/flag_detail",
         flag: flag,
         render_context: local_assigns[:render_context] || "group_item" %>
+
+  <div class="sticky bottom-0 mt-6 border-t border-neutral-200 bg-white pt-4">
+    <%= render "components/flag_footer",
+          flag: flag,
+          render_context: local_assigns[:render_context] || "group_item" %>
+  </div>
 </article>

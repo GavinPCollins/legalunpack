@@ -189,6 +189,59 @@ class ChatbotSessionsControllerTest < ActionDispatch::IntegrationTest
     LegalReferenceRetriever.define_singleton_method(:call, original_retriever_call) if original_retriever_call
   end
 
+  test "passes flag context into the prompt without changing the user question" do
+    doc_file = @package.doc_files.create!(
+      extraction_status: "complete",
+      extracted_text: "Payment is due within 14 days.",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    clause = doc_file.clauses.create!(
+      package: @package,
+      title: "Payment deadline",
+      content: "Payment is due within 14 days.",
+      summary: "Creates a short payment deadline."
+    )
+    flag = clause.flags.create!(
+      name: "Clarify payment deadline",
+      level: "high",
+      category: "deadline",
+      reason: "The payment deadline may need clarification.",
+      details: "The clause does not explain what happens if payment is delayed.",
+      suggested_action: "Ask whether the deadline can be extended."
+    )
+
+    captured_prompt = nil
+    captured_retriever_query = nil
+    original_ai_call = AiClient.method(:call)
+    original_retriever_call = LegalReferenceRetriever.method(:call)
+    LegalReferenceRetriever.define_singleton_method(:call) do |query:, **_options|
+      captured_retriever_query = query
+      []
+    end
+    AiClient.define_singleton_method(:call) do |prompt|
+      captured_prompt = prompt
+      "Ask for the deadline to be clarified."
+    end
+
+    post package_chatbot_sessions_url(@package),
+         params: { question: "What should I ask about?", target: "flag", target_id: flag.id },
+         as: :json
+
+    assert_response :success
+    json = JSON.parse(response.body)
+    assert_equal "What should I ask about?", json.dig("user_message", "content")
+    assert_includes captured_prompt, "Scope: flag"
+    assert_includes captured_prompt, "Flag: Clarify payment deadline"
+    assert_includes captured_prompt, "Flag priority: high"
+    assert_includes captured_prompt, "Flag details: The clause does not explain what happens if payment is delayed."
+    assert_includes captured_prompt, "Related clause text: Payment is due within 14 days."
+    assert_includes captured_retriever_query, "Flag: Clarify payment deadline"
+    assert_includes captured_retriever_query, "Suggested action: Ask whether the deadline can be extended."
+  ensure
+    AiClient.define_singleton_method(:call, original_ai_call) if original_ai_call
+    LegalReferenceRetriever.define_singleton_method(:call, original_retriever_call) if original_retriever_call
+  end
+
   test "returns stable response shape when external analysis is present" do
     @package.doc_files.create!(
       extraction_status: "complete",

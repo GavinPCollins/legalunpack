@@ -70,6 +70,41 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     assert_nil doc_file.replaced_by_doc_file
   end
 
+  test "should archive a file and resolve its active flags" do
+    doc_file = @package.doc_files.create!(
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    clause = doc_file.clauses.create!(package: @package, title: "Payment")
+    active_flag = clause.flags.create!(name: "Review payment term", level: "high")
+    resolved_flag = clause.flags.create!(
+      name: "Confirmed payment method",
+      level: "low",
+      resolved: true,
+      resolution_note: "Previously confirmed."
+    )
+
+    post archive_doc_file_url(doc_file)
+
+    assert_redirected_to package_url(@package)
+    assert doc_file.reload.archived?
+    assert_nil doc_file.replaced_by_doc_file
+    assert active_flag.reload.resolved?
+    assert_equal "file archived", active_flag.resolution_note
+    assert_not_nil active_flag.resolved_at
+    assert_equal "Previously confirmed.", resolved_flag.reload.resolution_note
+  end
+
+  test "should not archive another user's file" do
+    other_user = User.create!(email: "archive-other@example.com", password: "password", username: "archiveother")
+    other_package = other_user.packages.create!(name: "Private package")
+    other_file = other_package.doc_files.create!(file: fixture_file_upload("sample.txt", "text/plain"))
+
+    post archive_doc_file_url(other_file)
+
+    assert_response :not_found
+    assert_not other_file.reload.archived?
+  end
+
   test "invalid replacement leaves original file and flags unchanged" do
     doc_file = @package.doc_files.create!(file: fixture_file_upload("sample.txt", "text/plain"))
     clause = doc_file.clauses.create!(package: @package, title: "Payment")
@@ -168,12 +203,74 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     get doc_file_url(doc_file)
 
     assert_response :success
-    assert_select "li#doc_file_#{doc_file.id} span.text-neutral-600" do
+    assert_select "li#doc_file_#{doc_file.id} button[title='1 dismissed flag'].text-neutral-600" do
       assert_select "svg"
       assert_select "span", text: "1"
-      assert_select "span.italic", text: "(Resolved)"
+      assert_select "span.italic", text: "(Dismissed)"
+    end
+    assert_select "li#doc_file_#{doc_file.id} dialog[data-flag-drawer-target='dialog']" do
+      assert_select "h2", text: "Dismissed flag"
+      assert_select "h3", text: "Confirmed payment method"
+      assert_select "button", text: "Re-activate flag"
+      assert_select "button", text: "Dismiss flag", count: 0
     end
     assert_select "a[href='#{flags_doc_file_path(doc_file)}']", count: 0
+  end
+
+  test "should show dismissed flags page with an individual drawer for each flag" do
+    doc_file = @package.doc_files.create!(
+      ai_status: "complete",
+      file: fixture_file_upload("sample.txt", "text/plain")
+    )
+    clause = doc_file.clauses.create!(package: @package, title: "Payment")
+    first_flag = clause.flags.create!(
+      name: "Confirmed payment method",
+      level: "low",
+      resolved: true,
+      resolution_note: "Confirmed."
+    )
+    second_flag = clause.flags.create!(
+      name: "Accepted payment timing",
+      level: "medium",
+      resolved: true,
+      resolution_note: "Accepted."
+    )
+
+    get dismissed_flags_doc_file_url(doc_file)
+
+    assert_response :success
+    assert_select "h1", text: "Dismissed flags in sample.txt"
+    assert_select "h2", text: "2 Dismissed Flags"
+    assert_select "nav[aria-label='Breadcrumb']" do
+      assert_select "a[href='#{package_path(@package)}']", text: "Lease review"
+      assert_select "a[href='#{summary_doc_file_path(doc_file)}']", text: "sample.txt"
+    end
+    assert_select "li##{dom_id(first_flag)}" do
+      assert_select "h3", text: "Confirmed payment method"
+      assert_select "button", text: "See more"
+      assert_select "dialog" do
+        assert_select "h2", text: /Confirmed payment method/
+        assert_select "button", text: "Re-activate flag"
+      end
+    end
+    assert_select "li##{dom_id(second_flag)}" do
+      assert_select "h3", text: "Accepted payment timing"
+      assert_select "button", text: "See more"
+      assert_select "dialog" do
+        assert_select "h2", text: /Accepted payment timing/
+        assert_select "button", text: "Re-activate flag"
+      end
+    end
+  end
+
+  test "should not show dismissed flags for another user's file" do
+    other_user = User.create!(email: "dismissed-other@example.com", password: "password", username: "dismissedother")
+    other_package = other_user.packages.create!(name: "Private package")
+    other_file = other_package.doc_files.create!(file: fixture_file_upload("sample.txt", "text/plain"))
+
+    get dismissed_flags_doc_file_url(other_file)
+
+    assert_response :not_found
   end
 
   test "should reject add document without a file" do
@@ -442,6 +539,28 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
           assert_select "p", text: "The clause requires payment sooner than expected and may be difficult to meet."
           assert_select "h4", text: "Suggested action"
         end
+        assert_select "details:not([open])" do
+          assert_select "summary.group-open\\:hidden", text: "+ Add Note"
+          assert_select "form[data-controller='flag-note']" do
+            assert_select "input[type='submit'][value='Save']"
+            assert_select "button[data-action='flag-note#clear']", text: "Clear"
+          end
+        end
+        assert_select "form[data-controller='flag-chat-prompt']" do
+          assert_select "[data-flag-chat-prompt-flag-name-value='Clarify payment deadline']"
+          assert_select "[data-flag-chat-prompt-flag-id-value='#{low_risk_clause.flags.first.id}']"
+          assert_select "label", text: "Ask AI assistant"
+          assert_select "textarea[data-flag-chat-prompt-target='input']"
+          assert_select "button", text: "Move to chat"
+        end
+        assert_select "button", text: "Dismiss flag", count: 1
+        assert_select "[role='dialog'][aria-labelledby='dismiss_dialog_flag_#{low_risk_clause.flags.first.id}-title']" do
+          assert_select "label", text: "Reason (optional)"
+          assert_select "textarea[name='flag[resolution_note]']"
+          assert_select "button", text: "Cancel"
+          assert_select "input[type='submit'][value='Dismiss flag']"
+        end
+        assert_select "button", text: "Resolve", count: 0
       end
     end
     assert_select "li##{dom_id(high_risk_clause, :flag_group)}" do
@@ -594,8 +713,8 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
     assert_select "turbo-frame#summary_search_results" do
       assert_select "p", text: "No matching package results"
       assert_select "p", text: "Check your spelling, or try another word or phrase."
-      assert_select "p", text: /Alternatively,.*ask our AI assistant for help/m do
-        assert_select "button[data-action='search-drawer#close ai-chat-drawer#ask']", text: "ask our AI assistant for help"
+      assert_select "p", text: /Alternatively,.*search using our AI assistant/m do
+        assert_select "button[data-action='search-drawer#close ai-chat-drawer#ask']", text: "search using our AI assistant"
       end
       assert_select "button[data-ai-chat-drawer-question-param='Can you help me find anything related to \"payment\" in this package?']"
       assert_select "p", text: /Package name match/, count: 0

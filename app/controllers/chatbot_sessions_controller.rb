@@ -110,6 +110,22 @@ class ChatbotSessionsController < ApplicationController
       clause = package.clauses.find_by(id: target_id)
       context_parts << clause.content.to_s if clause
       context_parts << clause.summary.to_s if clause&.summary.present?
+    when "flag"
+      flag = Flag.joins(clause: :package).find_by(id: target_id, clauses: { package_id: package.id })
+      return context_parts.join("\n\n") unless flag
+
+      clause = flag.clause
+      doc = clause.doc_file
+      context_parts << "Flag: #{flag.name}"
+      context_parts << "Flag priority: #{flag.level}" if flag.level.present?
+      context_parts << "Flag category: #{flag.category}" if flag.category.present?
+      context_parts << "Flag summary: #{flag.reason}" if flag.reason.present?
+      context_parts << "Flag details: #{flag.details}" if flag.details.present?
+      context_parts << "Suggested action: #{flag.suggested_action}" if flag.suggested_action.present?
+      context_parts << "Related clause: #{clause.title}" if clause.respond_to?(:title) && clause.title.present?
+      context_parts << "Related clause text: #{clause.content}" if clause.content.present?
+      context_parts << "Related clause summary: #{clause.summary}" if clause.summary.present?
+      context_parts << "File: #{doc.file.filename}" if doc&.file&.attached?
     end
 
     context_parts.reject(&:blank?).join("\n\n")
