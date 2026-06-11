@@ -1,24 +1,162 @@
 # Trusted legal sources for backend import.
 #
 # Keep this file as the curated source list. Run:
+#   bin/rails legal_sources:discover
 #   bin/rails legal_sources:sync
 #   bin/rails legal_sources:import PENDING_ONLY=1
 #
 # Use source_url for website/PDF URLs. Use source_path for local files under data/legal_sources.
 
-- title: Refunds and returns
+---
+- title: Estate Agents Act 1980
   jurisdiction: VIC
   source_type: regulator_guidance
   authority_level: guidance
   publisher: Consumer Affairs Victoria
-  source_url: https://www.consumer.vic.gov.au/consumers-and-businesses/refunds-and-returns
-  source_format: html
-
-# Example local file source:
-# - title: Example local consumer guidance
-#   jurisdiction: VIC
-#   source_type: regulator_guidance
-#   authority_level: guidance
-#   publisher: Consumer Affairs Victoria
-#   source_path: data/legal_sources/example-guidance.txt
-#   source_format: txt
+  source_path: data/legal_sources/Estate Agents Act 1980.pdf
+  source_format: pdf
+- title: Owners Corporations Act 2006
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Owners Corporations Act 2006.pdf
+  source_format: pdf
+- title: Sale Of Land Act 1962
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Sale of Land Act 1962.pdf
+  source_format: pdf
+- title: Chargeback
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Refunds, repairs and returns/Chargeback.pdf
+  source_format: pdf
+- title: Damages And Compensation
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Refunds, repairs and returns/Damages and compensation.pdf
+  source_format: pdf
+- title: Guarantees That Apply Automatically
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Refunds, repairs and returns/Guarantees that apply
+    automatically.pdf
+  source_format: pdf
+- title: Insolvency
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Refunds, repairs and returns/Insolvency.pdf
+  source_format: pdf
+- title: Linked Products And Services
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Refunds, repairs and returns/Linked products and
+    services.pdf
+  source_format: pdf
+- title: Receipts And Other Proof Of Transaction
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Refunds, repairs and returns/Receipts and other
+    proof of transaction.pdf
+  source_format: pdf
+- title: Rejecting And Returning Products
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Refunds, repairs and returns/Rejecting and returning
+    products.pdf
+  source_format: pdf
+- title: Factory Outlets
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Refunds, repairs and returns/Sales, seconds, factory
+    outlets, second hand - refunds/Factory outlets.pdf
+  source_format: pdf
+- title: Sales Items Refunds
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Refunds, repairs and returns/Sales, seconds, factory
+    outlets, second hand - refunds/Sales items - refunds.pdf
+  source_format: pdf
+- title: Second Hand Items
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Refunds, repairs and returns/Sales, seconds, factory
+    outlets, second hand - refunds/Second hand items.pdf
+  source_format: pdf
+- title: Seconds Or Samples
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Refunds, repairs and returns/Sales, seconds, factory
+    outlets, second hand - refunds/Seconds or samples.pdf
+  source_format: pdf
+- title: Expired Warranty
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Refunds, repairs and returns/Warranties/Expired
+    warranty.pdf
+  source_format: pdf
+- title: Repairs And Replacements Under Warranty
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Refunds, repairs and returns/Warranties/Repairs
+    and replacements under warranty.pdf
+  source_format: pdf
+- title: Types Of Warranties
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Refunds, repairs and returns/Warranties/Types of
+    warranties.pdf
+  source_format: pdf
+- title: Warranty Cards
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Refunds, repairs and returns/Warranties/Warranty
+    cards.pdf
+  source_format: pdf
+- title: Residential Tenanciec Act 1997
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Residential_Tenanciec_Act_1997.txt
+  source_format: txt
+- title: Residential Tenancies Regulations 2021
+  jurisdiction: VIC
+  source_type: regulator_guidance
+  authority_level: guidance
+  publisher: Consumer Affairs Victoria
+  source_path: data/legal_sources/Residential_Tenancies_Regulations_2021.txt
+  source_format: txt
