@@ -91,6 +91,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_11_000000) do
     t.string "extraction_status"
     t.string "file_path"
     t.bigint "package_id", null: false
+    t.date "sign_by"
+    t.boolean "signed"
     t.datetime "updated_at", null: false
     t.index ["package_id"], name: "index_doc_files_on_package_id"
   end
@@ -139,7 +141,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_11_000000) do
     t.string "title", null: false
     t.datetime "updated_at", null: false
     t.index ["jurisdiction", "source_type"], name: "index_legal_sources_on_jurisdiction_and_source_type"
-    t.index ["source_url"], name: "index_legal_sources_on_source_url", unique: true, where: "((source_url IS NOT NULL) AND ((source_url)::text <> ''::text))"
+    t.index ["source_url"], name: "index_legal_sources_on_source_url", unique: true
   end
 
   create_table "packages", force: :cascade do |t|

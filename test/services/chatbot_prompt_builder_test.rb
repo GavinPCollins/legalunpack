@@ -33,11 +33,74 @@ class ChatbotPromptBuilderTest < ActiveSupport::TestCase
     assert_includes prompt, "Current question:\nWhen does it renew?"
   end
 
-  test "keeps document text as the primary source over history" do
+  test "uses document text and legal references while keeping history contextual" do
     prompt = ChatbotPromptBuilder.build(@package, question: "What is the lease term?")
 
-    assert_includes prompt, "Use the document text provided below as the PRIMARY source."
+    assert_includes prompt, "Use the document text and retrieved legal reference material together"
+    assert_includes prompt, "Treat the document text as the source for what the package says"
     assert_includes prompt, "Do not treat conversation history as a source of document facts"
+    assert_includes prompt, "When legal reference material comes from an Act or Regulation"
+    assert_includes prompt, "Start with a 1-2 sentence direct answer that gives immediate context."
+    assert_includes prompt, "Prefer 3-6 concise bullets over long paragraphs."
+    assert_includes prompt, "Do not paste large blocks from the document or legal references."
+    assert_includes prompt, 'include a short "Legal references" section naming the relevant source title'
     assert_includes prompt, "No prior conversation."
+  end
+
+  test "includes retrieved legal references as supporting context" do
+    source = LegalSource.create!(
+      title: "Refunds and returns",
+      jurisdiction: "VIC",
+      source_type: "regulator_guidance",
+      authority_level: "guidance",
+      publisher: "Consumer Affairs Victoria",
+      source_url: "https://www.consumer.vic.gov.au/refunds",
+      source_format: "html"
+    )
+    chunk = source.legal_source_chunks.create!(
+      heading: "Major problems",
+      content: "Consumers may be entitled to a refund when goods have a major problem.",
+      position: 1
+    )
+    reference = LegalReferenceRetriever::Result.new(number: 1, chunk: chunk)
+
+    prompt = ChatbotPromptBuilder.build(
+      @package,
+      question: "Does this mention refunds?",
+      legal_references: [ reference ]
+    )
+
+    assert_includes prompt, "Legal reference material:"
+    assert_includes prompt, "[L1] Refunds and returns | Major problems | Consumer Affairs Victoria | VIC | regulator_guidance | guidance"
+    assert_includes prompt, "Use it when it helps answer the question, cite it as [L1], [L2]"
+    assert_includes prompt, "Consumers may be entitled to a refund"
+  end
+
+  test "includes Act and Regulation citation metadata in legal references" do
+    source = LegalSource.create!(
+      title: "Residential Tenancies Act 1997",
+      citation: "Authorised Version No. 111",
+      jurisdiction: "VIC",
+      source_type: "act",
+      authority_level: "legislation",
+      publisher: "Victorian Legislation",
+      source_url: "https://example.com/residential-tenancies-act",
+      source_format: "txt"
+    )
+    chunk = source.legal_source_chunks.create!(
+      heading: "91Z Notice of intention to vacate",
+      content: "A renter may give a residential rental provider a notice of intention to vacate.",
+      position: 1
+    )
+    reference = LegalReferenceRetriever::Result.new(number: 1, chunk: chunk)
+
+    prompt = ChatbotPromptBuilder.build(
+      @package,
+      question: "What notice is required?",
+      legal_references: [ reference ]
+    )
+
+    assert_includes prompt, "[L1] Authorised Version No. 111, 91Z | 91Z Notice of intention to vacate"
+    assert_includes prompt, "Victorian Legislation | VIC | act | legislation"
   end
 end

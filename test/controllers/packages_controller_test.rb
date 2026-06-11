@@ -274,7 +274,7 @@ class PackagesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Analysis required"
-    assert_includes response.body, "2 uploaded files require AI analysis."
+    assert_match(/2 uploaded files\s+require AI analysis\./, response.body)
     assert_select "form[action='#{analyze_package_path(@package)}'][method='post'] button", text: "Run analysis"
     assert_select "form[data-action='submit->package-status-poll#markAnalysisStarted']"
     assert_select "p", text: "Nothing needs attention", count: 0

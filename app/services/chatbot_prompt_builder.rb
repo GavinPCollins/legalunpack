@@ -6,7 +6,7 @@ class ChatbotPromptBuilder
   # - target: "package" | "doc_file" | "clause"
   # - target_id: id for doc_file or clause when applicable
   # - history: previous ChatMessage records for follow-up context
-  def self.build(package, question:, target: "package", target_id: nil, history: []) # rubocop:disable Metrics/MethodLength,Metrics/PerceivedComplexity
+  def self.build(package, question:, target: "package", target_id: nil, history: [], legal_references: nil) # rubocop:disable Metrics/MethodLength,Metrics/PerceivedComplexity
     context_parts = []
 
     case target.to_s
@@ -26,19 +26,32 @@ class ChatbotPromptBuilder
     context = context_parts.reject(&:blank?).join("\n\n")
 
     header = <<~HEADER
-      You are a helpful legal assistant. Use the document text provided below as the PRIMARY source.
-      First, attempt to answer STRICTLY and ONLY from the document text. If the documents contain enough information, answer using ONLY those documents and cite the relevant text where possible.
+      You are a helpful legal assistant. Use the document text and retrieved legal reference material together to answer the user's question.
+      Treat the document text as the source for what the package says, and the legal reference material as the source for relevant legal or regulatory context. Cite the source you rely on where possible.
 
       Use the conversation history only to understand follow-up questions, references, and context from the user. Do not treat conversation history as a source of document facts unless those facts are supported by the document text.
 
-      If the documents do NOT contain enough information to answer the question, first state exactly: "Insufficient document information to answer." Then, optionally provide an additional section titled "External analysis" where you MAY apply general legal principles or common practice to offer interpretation.
+      If the document text and retrieved legal references together do NOT contain enough information to answer the question, say what is missing. Then, optionally provide a section titled "External analysis" where you MAY apply clearly marked general legal principles or common practice.
+
+      The legal reference material is retrieved by the app. Use it when it helps answer the question, cite it as [L1], [L2], etc., and never invent legislation, sections, regulations, regulators, or citations that are not shown there.
+      When legal reference material comes from an Act or Regulation, cite the provided citation exactly, including the pinpoint section/regulation/part/schedule where shown.
 
       In the "External analysis" section you MUST:
-      - Clearly mark that the material is external to the package documents.
+      - Clearly mark that the material is not directly stated in the document text or retrieved legal references.
       - Give a confidence level (high / medium / low) for any external interpretation.
-      - Provide a one-line rationale for why external knowledge was needed.
+      - Provide a one-line rationale for why extra reasoning was needed.
 
       Do not present external analysis as definitive legal advice; recommend human review when appropriate.
+
+      Response style:
+      - Start with a 1-2 sentence direct answer that gives immediate context.
+      - Then use short sections with clear labels when helpful: "Why", "Relevant terms", "Legal references", "Risks", "Next step".
+      - Prefer 3-6 concise bullets over long paragraphs.
+      - Do not paste large blocks from the document or legal references. Quote only short phrases when needed.
+      - If legal reference material materially informs the answer, include a short "Legal references" section naming the relevant source title or Act/Regulation citation and citation label, for example: "[L1] Residential Tenancies Act 1997 (VIC), s 91Z - explains when this notice may apply."
+      - When citing legal reference material, explain why the reference matters in plain English before citing [L1], [L2], etc.
+      - If a legal reference is retrieved but not actually relevant, ignore it.
+      - If the answer is uncertain, say what is missing rather than filling the gap with assumptions.
     HEADER
 
     prompt_body = if context.blank?
@@ -48,6 +61,8 @@ class ChatbotPromptBuilder
                   end
 
     history_body = history_prompt(history)
+    legal_references ||= LegalReferenceRetriever.call(query: question)
+    legal_references_body = legal_references_prompt(legal_references)
 
     <<~PROMPT
       #{header}
@@ -58,6 +73,9 @@ class ChatbotPromptBuilder
       Document text:
       #{prompt_body}
 
+      Legal reference material:
+      #{legal_references_body}
+
       Conversation history:
       #{history_body}
 
@@ -65,10 +83,10 @@ class ChatbotPromptBuilder
       #{question}
 
       Answer in two possible parts as needed:
-      1) A concise answer strictly from the document text (if available).
-      2) If insufficient, a labeled "External analysis" section (see rules above).
+      1) A concise answer grounded in the document text and any relevant legal reference material.
+      2) If those sources are insufficient, a labeled "External analysis" section with clearly marked general reasoning.
 
-      Keep the answer concise and clearly separate document-based findings from any external reasoning.
+      Keep the answer concise and structured. Clearly separate what the document says, what the legal references say, and any extra reasoning.
     PROMPT
   end
 
@@ -87,4 +105,27 @@ class ChatbotPromptBuilder
     lines.join("\n\n").truncate(6_000, separator: "\n\n")
   end
   private_class_method :history_prompt
+
+  def self.legal_references_prompt(legal_references)
+    references = Array(legal_references).first(5)
+    return "No legal reference material retrieved." if references.blank?
+
+    references.map do |reference|
+      source_parts = [
+        reference.citation.presence || reference.title,
+        reference.heading,
+        reference.publisher,
+        reference.jurisdiction,
+        reference.source_type,
+        reference.authority_level
+      ].compact_blank
+
+      <<~REFERENCE.squish
+        [#{reference.label}] #{source_parts.join(" | ")}
+        Source: #{reference.source_url}
+        Text: #{reference.content.to_s.truncate(2_000, separator: " ")}
+      REFERENCE
+    end.join("\n\n")
+  end
+  private_class_method :legal_references_prompt
 end

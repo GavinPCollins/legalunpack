@@ -263,7 +263,7 @@ class ImportLegalSourceFromUrl
   end
 
   def section_label_from(heading)
-    heading.to_s.match(/\A((?:section|s|regulation|reg|clause|part|division|schedule)\s+\d+[a-z]?)/i)&.[](1)
+    heading.to_s.match(/\A((?:section|s|regulation|reg|clause|part|division|schedule)\s+\d+[a-z]*|[0-9]+[A-Z]{0,3}[a-z]?)\b/i)&.[](1)
   end
 
   def chunk_by_size(raw_text)
