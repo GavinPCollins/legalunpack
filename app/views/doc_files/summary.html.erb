@@ -61,7 +61,9 @@
           <ol class="mt-3 space-y-2 text-sm">
             <% @doc_file.clauses.sort_by { |clause| clause.position || 0 }.each do |clause| %>
               <li>
-                <a href="#clause-<%= clause.id %>" class="block text-cyan-800 hover:text-cyan-950">
+                <a href="#<%= dom_id(clause) %>"
+                   class="block text-cyan-800 hover:text-cyan-950"
+                   data-action="summary-highlight#jumpToClause">
                   <%= clause.position %>. <%= clause.title.presence || "Untitled clause" %>
                 </a>
               </li>
@@ -107,7 +109,7 @@
               <% clause_title = clause.title.presence || "Untitled clause" %>
               <% clause_summary = clause.summary.presence || "No summary saved." %>
               <% unresolved_flags = clause.flags.reject(&:resolved?) %>
-              <li id="<%= dom_id(clause) %>" class="<%= class_names(
+              <li id="<%= dom_id(clause) %>" tabindex="-1" class="<%= class_names(
                 "scroll-mt-24 rounded-md border p-4",
                 focused_clause ? "border-cyan-300 bg-cyan-50/40 ring-2 ring-cyan-100" : "border-neutral-200"
               ) %>">
