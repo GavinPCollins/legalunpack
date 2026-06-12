@@ -1,13 +1,13 @@
 // CODEX file summary
 import { Controller } from "@hotwired/stimulus"
 
+const focusedClauseClasses = ["border-cyan-300", "bg-cyan-50/40", "ring-2", "ring-cyan-100"]
+
 export default class extends Controller {
   static targets = ["match"]
 
   connect() {
-    const hashTarget = this.scrollToHashTarget()
-
-    if (!this.hasMatchTarget || hashTarget?.id?.startsWith("clause_")) return
+    if (!this.hasMatchTarget) return
 
     this.currentIndex = this.initialMatchIndex()
 
@@ -32,22 +32,18 @@ export default class extends Controller {
     event.preventDefault()
     history.pushState(null, "", `#${clause.id}`)
     clause.scrollIntoView({ behavior: "smooth", block: "start" })
+    this.highlightClause(clause)
     clause.focus({ preventScroll: true })
   }
 
-  scrollToHashTarget() {
-    const targetId = window.location.hash?.slice(1)
-    if (!targetId) return
-
-    const target = document.getElementById(decodeURIComponent(targetId))
-    if (!target) return
-
-    requestAnimationFrame(() => {
-      target.scrollIntoView({ block: "start" })
-      target.focus({ preventScroll: true })
+  highlightClause(clause) {
+    this.element.querySelectorAll("[id^='clause_']").forEach((candidate) => {
+      candidate.classList.remove(...focusedClauseClasses)
+      candidate.classList.add("border-neutral-200")
     })
 
-    return target
+    clause.classList.remove("border-neutral-200")
+    clause.classList.add(...focusedClauseClasses)
   }
 
   initialMatchIndex() {
