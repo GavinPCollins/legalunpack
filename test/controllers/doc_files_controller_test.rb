@@ -338,6 +338,8 @@ class DocFilesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "li##{dom_id(clause)}"
+    assert_select "li##{dom_id(clause)}[tabindex='-1']"
+    assert_select "a[href='##{dom_id(clause)}'][data-action='summary-highlight#jumpToClause']", text: "1. Payment"
     assert_not_includes response.body, "Risk:"
   end
 
